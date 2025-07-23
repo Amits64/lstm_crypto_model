@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Live Binance Candlestick Chart with AI Predictions</title>
+  <script src="https://cdn.plot.ly/plotly-2.26.0.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+      color: #e0e0e0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      overflow-x: hidden;
+    }
+
+    .header {
+      background: rgba(17, 17, 17, 0.95);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid #333;
+      padding: 20px;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+
+    .title {
+      font-size: 28px;
+      font-weight: 700;
+      background: linear-gradient(45deg, #00d4ff, #00ff88);
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    .controls {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .control-label {
+      font-size: 14px;
+      color: #ccc;
+      font-weight: 500;
+    }
+
+    select {
+      background: linear-gradient(145deg, #2a2a2a, #1e1e1e);
+      color: #fff;
+      border: 2px solid #444;
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      min-width: 120px;
+    }
+
+    select:hover {
+      border-color: #00d4ff;
+      box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
+    }
+
+    select:focus {
+      outline: none;
+      border-color: #00ff88;
+      box-shadow: 0 0 20px rgba(0, 255, 136, 0.4);
+    }
+
+    /* Fix dropdown options styling */
+    select option {
+      background-color: #2a2a2a;
+      color: #fff;
+      padding: 10px;
+      border: none;
+    }
+
+    select option:hover {
+      background-color: #3a3a3a;
+      color: #00d4ff;
+    }
+
+    select option:checked {
+      background-color: #00d4ff;
+      color: #000;
+    }
+
+    .ai-controls {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin-bottom: 10px;
+    }
+
+    .btn {
+      background: linear-gradient(145deg, #2a2a2a, #1e1e1e);
+      color: #fff;
+      border: 2px solid #444;
+      border-radius: 8px;
+      padding: 10px 20px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .btn:hover {
+      border-color: #00d4ff;
+      box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
+      transform: translateY(-2px);
+    }
+
+    .btn.primary {
+      background: linear-gradient(145deg, #00d4ff, #0099cc);
+      border-color: #00d4ff;
+    }
+
+    .btn.success {
+      background: linear-gradient(145deg, #00ff88, #00cc66);
+      border-color: #00ff88;
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .main-container {
+      display: flex;
+      height: calc(100vh - 200px);
+      gap: 20px;
+      padding: 20px;
+    }
+
+    .chart-container {
+      flex: 1;
+      background: rgba(20, 20, 20, 0.8);
+      border-radius: 12px;
+      border: 1px solid #333;
+      overflow: hidden;
+    }
+
+    #chart {
+      width: 100%;
+      height: 100%;
+    }
+
+    .sidebar {
+      width: 350px;
+      background: rgba(20, 20, 20, 0.9);
+      border-radius: 12px;
+      border: 1px solid #333;
+      padding: 20px;
+      overflow-y: auto;
+    }
+
+    .prediction-panel {
+      margin-bottom: 25px;
+    }
+
+    .panel-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #00d4ff;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .ai-icon {
+      width: 20px;
+      height: 20px;
+      background: linear-gradient(45deg, #00d4ff, #00ff88);
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .prediction-card {
+      background: linear-gradient(145deg, #2a2a2a, #1e1e1e);
+      border-radius: 10px;
+      padding: 15px;
+      border: 1px solid #444;
+      margin-bottom: 15px;
+    }
+
+    .price-display {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .current-price {
+      font-size: 24px;
+      font-weight: bold;
+      color: #fff;
+    }
+
+    .predicted-price {
+      font-size: 20px;
+      font-weight: bold;
+    }
+
+    .price-up {
+      color: #00ff88;
+    }
+
+    .price-down {
+      color: #ff4444;
+    }
+
+    .price-neutral {
+      color: #ffaa00;
+    }
+
+    .prediction-details {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      font-size: 12px;
+    }
+
+    .detail-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 5px 0;
+      border-bottom: 1px solid #333;
+    }
+
+    .confidence-bar {
+      width: 100%;
+      height: 8px;
+      background: #333;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 10px;
+    }
+
+    .confidence-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #ff4444, #ffaa00, #00ff88);
+      transition: width 0.3s ease;
+    }
+
+    .indicators-panel {
+      margin-top: 20px;
+    }
+
+    .indicator-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid #333;
+      font-size: 14px;
+    }
+
+    .indicator-value {
+      font-weight: bold;
+    }
+
+    .status-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(17, 17, 17, 0.95);
+      backdrop-filter: blur(10px);
+      padding: 10px 20px;
+      border-top: 1px solid #333;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      color: #999;
+    }
+
+    .live-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .live-dot {
+      width: 8px;
+      height: 8px;
+      background: #00ff88;
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    .ai-dot {
+      width: 8px;
+      height: 8px;
+      background: #00d4ff;
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.5; }
+      100% { opacity: 1; }
+    }
+
+    .error-message {
+      background: rgba(255, 0, 0, 0.1);
+      border: 1px solid #ff4444;
+      color: #ff6666;
+      padding: 15px;
+      border-radius: 8px;
+      margin: 20px;
+      text-align: center;
+      font-weight: 500;
+    }
+
+    .loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      color: #00d4ff;
+      font-style: italic;
+    }
+
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid #333;
+      border-top: 2px solid #00d4ff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    @media (max-width: 1200px) {
+      .main-container {
+        flex-direction: column;
+        height: auto;
+      }
+
+      .sidebar {
+        width: 100%;
+        order: -1;
+      }
+
+      .chart-container {
+        height: 60vh;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .controls {
+        gap: 15px;
+      }
+
+      .control-group {
+        min-width: 140px;
+      }
+
+      .ai-controls {
+        flex-wrap: wrap;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1 class="title">Live Binance Candlestick Chart with AI Predictions</h1>
+    <div class="controls">
+      <div class="control-group">
+        <label class="control-label">Symbol:</label>
+        <select id="symbolSelect">
+          {% for symbol in symbols %}
+            <option value="{{ symbol }}" {% if symbol == 'BTCUSDT' %}selected{% endif %}>
+              {{ symbol }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="control-group">
+        <label class="control-label">Interval:</label>
+        <select id="intervalSelect">
+          <option value="1m">1 Minute</option>
+          <option value="3m">3 Minutes</option>
+          <option value="5m" selected>5 Minutes</option>
+          <option value="15m">15 Minutes</option>
+          <option value="30m">30 Minutes</option>
+          <option value="1h">1 Hour</option>
+          <option value="2h">2 Hours</option>
+          <option value="4h">4 Hours</option>
+          <option value="6h">6 Hours</option>
+          <option value="8h">8 Hours</option>
+          <option value="12h">12 Hours</option>
+          <option value="1d">1 Day</option>
+          <option value="3d">3 Days</option>
+          <option value="1w">1 Week</option>
+          <option value="1M">1 Month</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="ai-controls">
+      <button id="getPredictionBtn" class="btn primary">Get AI Prediction</button>
+      <button id="trainModelBtn" class="btn success">Train Model</button>
+      <button id="toggleAutoPredictBtn" class="btn">Auto Predict: OFF</button>
+    </div>
+  </div>
+
+  <div class="main-container">
+    <div class="chart-container">
+      <div id="chart"></div>
+    </div>
+
+    <div class="sidebar">
+      <div class="prediction-panel">
+        <div class="panel-title">
+          <span class="ai-icon"></span>
+          AI Price Prediction
+        </div>
+
+        <div id="predictionCard" class="prediction-card" style="display: none;">
+          <div class="price-display">
+            <div>
+              <div style="font-size: 12px; color: #999;">Current</div>
+              <div id="currentPrice" class="current-price">--</div>
+            </div>
+            <div>
+              <div style="font-size: 12px; color: #999;">Predicted</div>
+              <div id="predictedPrice" class="predicted-price">--</div>
+            </div>
+          </div>
+
+          <div class="prediction-details">
+            <div class="detail-item">
+              <span>Change:</span>
+              <span id="priceChange">--</span>
+            </div>
+            <div class="detail-item">
+              <span>Direction:</span>
+              <span id="direction">--</span>
+            </div>
+            <div class="detail-item">
+              <span>Change %:</span>
+              <span id="changePercent">--</span>
+            </div>
+            <div class="detail-item">
+              <span>Confidence:</span>
+              <span id="confidence">--</span>
+            </div>
+          </div>
+
+          <div class="confidence-bar">
+            <div id="confidenceFill" class="confidence-fill" style="width: 0%"></div>
+          </div>
+
+          <div style="font-size: 11px; color: #666; margin-top: 10px;">
+            Last updated: <span id="predictionTime">--</span>
+          </div>
+        </div>
+
+        <div id="predictionLoading" class="loading" style="display: none;">
+          <div class="spinner"></div>
+          <span>Generating AI prediction...</span>
+        </div>
+
+        <div id="predictionError" class="error-message" style="display: none;">
+          Failed to get prediction. Please try again.
+        </div>
+      </div>
+
+      <div class="indicators-panel">
+        <div class="panel-title">Technical Indicators</div>
+        <div id="technicalIndicators">
+          <div class="indicator-item">
+            <span>MA 20:</span>
+            <span id="ma20" class="indicator-value">--</span>
+          </div>
+          <div class="indicator-item">
+            <span>MA 50:</span>
+            <span id="ma50" class="indicator-value">--</span>
+          </div>
+          <div class="indicator-item">
+            <span>RSI:</span>
+            <span id="rsi" class="indicator-value">--</span>
+          </div>
+          <div class="indicator-item">
+            <span>MACD:</span>
+            <span id="macd" class="indicator-value">--</span>
+          </div>
+          <div class="indicator-item">
+            <span>MACD Signal:</span>
+            <span id="macdSignal" class="indicator-value">--</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="status-bar">
+    <div class="live-indicator">
+      <div class="live-dot"></div>
+      <span>Live Data</span>
+      <div class="ai-dot" id="aiIndicator" style="display: none;"></div>
+      <span id="aiStatus" style="display: none;">AI Active</span>
+    </div>
+    <div id="lastUpdate">Last updated: --</div>
+  </div>
+
+  <script>
+    let currentSymbol = "BTCUSDT";
+    let currentInterval = "5m";
+    let refreshInterval;
+    let predictionInterval;
+    let autoPredictEnabled = false;
+
+    // DOM elements
+    const symbolSelect = document.getElementById("symbolSelect");
+    const intervalSelect = document.getElementById("intervalSelect");
+    const getPredictionBtn = document.getElementById("getPredictionBtn");
+    const trainModelBtn = document.getElementById("trainModelBtn");
+    const toggleAutoPredictBtn = document.getElementById("toggleAutoPredictBtn");
+
+    // Event listeners
+    symbolSelect.addEventListener("change", (e) => {
+      currentSymbol = e.target.value;
+      fetchAndPlot();
+      if (autoPredictEnabled) {
+        getPrediction();
+      }
+    });
+
+    intervalSelect.addEventListener("change", (e) => {
+      currentInterval = e.target.value;
+      fetchAndPlot();
+
+      // Adjust refresh rate based on interval
+      clearInterval(refreshInterval);
+      const refreshRate = getRefreshRate(currentInterval);
+      refreshInterval = setInterval(fetchAndPlot, refreshRate);
+
+      if (autoPredictEnabled) {
+        getPrediction();
+      }
+    });
+
+    getPredictionBtn.addEventListener("click", getPrediction);
+    trainModelBtn.addEventListener("click", trainModel);
+    toggleAutoPredictBtn.addEventListener("click", toggleAutoPredict);
+
+    function getRefreshRate(interval) {
+      const rates = {
+        '1m': 5000,   // 5 seconds
+        '3m': 10000,  // 10 seconds
+        '5m': 15000,  // 15 seconds
+        '15m': 30000, // 30 seconds
+        '30m': 60000, // 1 minute
+        '1h': 120000, // 2 minutes
+        '2h': 240000, // 4 minutes
+        '4h': 300000, // 5 minutes
+        '6h': 300000, // 5 minutes
+        '8h': 300000, // 5 minutes
+        '12h': 600000, // 10 minutes
+        '1d': 600000, // 10 minutes
+        '3d': 1800000, // 30 minutes
+        '1w': 3600000, // 1 hour
+        '1M': 3600000  // 1 hour
+      };
+      return rates[interval] || 15000;
+    }
+
+    function fetchAndPlot() {
+      fetch(`/candles?symbol=${currentSymbol}&interval=${currentInterval}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.error) {
+            console.error(data.error);
+            document.getElementById('chart').innerHTML =
+              `<div class="error-message">Error: ${data.error}</div>`;
+            return;
+          }
+
+          const times = data.map(d => new Date(d.time));
+
+          // Candlestick trace with enhanced styling
+          const candlestickTrace = {
+            x: times,
+            open: data.map(d => d.open),
+            high: data.map(d => d.high),
+            low: data.map(d => d.low),
+            close: data.map(d => d.close),
+            type: 'candlestick',
+            name: currentSymbol,
+            increasing: {
+              line: { color: '#00ff88', width: 1 },
+              fillcolor: 'rgba(0, 255, 136, 0.3)'
+            },
+            decreasing: {
+              line: { color: '#ff4444', width: 1 },
+              fillcolor: 'rgba(255, 68, 68, 0.3)'
+            },
+            line: { width: 1 },
+            whiskerwidth: 0.8,
+            xaxis: 'x',
+            yaxis: 'y'
+          };
+
+          const layout = {
+            dragmode: 'pan',
+            showlegend: false,
+            paper_bgcolor: 'rgba(0,0,0,0)',
+            plot_bgcolor: 'rgba(10,10,10,0.8)',
+            font: { color: '#e0e0e0', family: 'Segoe UI' },
+
+            xaxis: {
+              rangeslider: {
+                visible: true,
+                bgcolor: 'rgba(40,40,40,0.8)',
+                bordercolor: '#555',
+                borderwidth: 1,
+                thickness: 0.08
+              },
+              showgrid: true,
+              gridcolor: 'rgba(255,255,255,0.1)',
+              gridwidth: 1,
+              tickfont: { color: '#ccc', size: 11 },
+              title: { text: 'Time', font: { color: '#ccc', size: 12 } },
+              showspikes: true,
+              spikecolor: '#00d4ff',
+              spikethickness: 1,
+              spikedash: 'dot'
+            },
+
+            yaxis: {
+              showgrid: true,
+              gridcolor: 'rgba(255,255,255,0.1)',
+              gridwidth: 1,
+              tickfont: { color: '#ccc', size: 11 },
+              title: { text: 'Price (USDT)', font: { color: '#ccc', size: 12 } },
+              side: 'right',
+              showspikes: true,
+              spikecolor: '#00d4ff',
+              spikethickness: 1,
+              spikedash: 'dot'
+            },
+
+            margin: { l: 60, r: 80, t: 40, b: 60 },
+
+            hovermode: 'x unified',
+            hoverlabel: {
+              bgcolor: 'rgba(0,0,0,0.8)',
+              bordercolor: '#00d4ff',
+              font: { color: '#fff', size: 12 }
+            }
+          };
+
+          const config = {
+            displayModeBar: true,
+            displaylogo: false,
+            modeBarButtonsToRemove: ['lasso2d', 'select2d'],
+            scrollZoom: true,
+            responsive: true
+          };
+
+          Plotly.newPlot('chart', [candlestickTrace], layout, config);
+
+          // Update last update time
+          document.getElementById('lastUpdate').textContent =
+            `Last updated: ${new Date().toLocaleTimeString()}`;
+        })
+        .catch(error => {
+          console.error('Fetch error:', error);
+          document.getElementById('chart').innerHTML =
+            `<div class="error-message">Network Error: Unable to fetch data</div>`;
+        });
+    }
+
+    function getPrediction() {
+      // Show loading state
+      document.getElementById('predictionCard').style.display = 'none';
+      document.getElementById('predictionError').style.display = 'none';
+      document.getElementById('predictionLoading').style.display = 'block';
+
+      fetch(`/predict?symbol=${currentSymbol}&interval=${currentInterval}`)
+        .then(res => res.json())
+        .then(data => {
+          document.getElementById('predictionLoading').style.display = 'none';
+
+          if (data.error) {
+            document.getElementById('predictionError').style.display = 'block';
+            console.error('Prediction error:', data.error);
+            return;
+          }
+
+          // Update prediction display
+          document.getElementById('currentPrice').textContent = `${data.current_price.toFixed(2)}`;
+          document.getElementById('predictedPrice').textContent = `${data.predicted_price.toFixed(2)}`;
+          document.getElementById('priceChange').textContent = `${data.price_change.toFixed(2)}`;
+          document.getElementById('changePercent').textContent = `${data.price_change_percent.toFixed(2)}%`;
+          document.getElementById('direction').textContent = data.direction;
+          document.getElementById('confidence').textContent = `${data.confidence.toFixed(1)}%`;
+          document.getElementById('predictionTime').textContent = new Date(data.timestamp).toLocaleTimeString();
+
+          // Update confidence bar
+          document.getElementById('confidenceFill').style.width = `${data.confidence}%`;
+
+          // Color coding based on direction
+          const predictedPriceElement = document.getElementById('predictedPrice');
+          const directionElement = document.getElementById('direction');
+          const priceChangeElement = document.getElementById('priceChange');
+          const changePercentElement = document.getElementById('changePercent');
+
+          if (data.direction === 'UP') {
+            predictedPriceElement.className = 'predicted-price price-up';
+            directionElement.className = 'price-up';
+            priceChangeElement.className = 'price-up';
+            changePercentElement.className = 'price-up';
+          } else if (data.direction === 'DOWN') {
+            predictedPriceElement.className = 'predicted-price price-down';
+            directionElement.className = 'price-down';
+            priceChangeElement.className = 'price-down';
+            changePercentElement.className = 'price-down';
+          } else {
+            predictedPriceElement.className = 'predicted-price price-neutral';
+            directionElement.className = 'price-neutral';
+            priceChangeElement.className = 'price-neutral';
+            changePercentElement.className = 'price-neutral';
+          }
+
+          // Update technical indicators
+          if (data.indicators) {
+            document.getElementById('ma20').textContent =
+              data.indicators.ma_20 ? `${data.indicators.ma_20.toFixed(2)}` : '--';
+            document.getElementById('ma50').textContent =
+              data.indicators.ma_50 ? `${data.indicators.ma_50.toFixed(2)}` : '--';
+            document.getElementById('rsi').textContent =
+              data.indicators.rsi ? data.indicators.rsi.toFixed(2) : '--';
+            document.getElementById('macd').textContent =
+              data.indicators.macd ? data.indicators.macd.toFixed(4) : '--';
+            document.getElementById('macdSignal').textContent =
+              data.indicators.macd_signal ? data.indicators.macd_signal.toFixed(4) : '--';
+          }
+
+          document.getElementById('predictionCard').style.display = 'block';
+
+          // Show AI indicator
+          document.getElementById('aiIndicator').style.display = 'block';
+          document.getElementById('aiStatus').style.display = 'block';
+        })
+        .catch(error => {
+          document.getElementById('predictionLoading').style.display = 'none';
+          document.getElementById('predictionError').style.display = 'block';
+          console.error('Prediction fetch error:', error);
+        });
+    }
+
+    function trainModel() {
+      trainModelBtn.disabled = true;
+      trainModelBtn.textContent = 'Training...';
+
+      fetch('/train')
+        .then(res => res.json())
+        .then(data => {
+          if (data.status === 'success') {
+            alert('Model training completed successfully!');
+          } else {
+            alert(`Training failed: ${data.message}`);
+          }
+        })
+        .catch(error => {
+          alert(`Training error: ${error.message}`);
+        })
+        .finally(() => {
+          trainModelBtn.disabled = false;
+          trainModelBtn.textContent = 'Train Model';
+        });
+    }
+
+    function toggleAutoPredict() {
+      autoPredictEnabled = !autoPredictEnabled;
+
+      if (autoPredictEnabled) {
+        toggleAutoPredictBtn.textContent = 'Auto Predict: ON';
+        toggleAutoPredictBtn.style.borderColor = '#00ff88';
+
+        // Get initial prediction
+        getPrediction();
+
+        // Set up auto prediction interval (every 2 minutes)
+        predictionInterval = setInterval(getPrediction, 120000);
+      } else {
+        toggleAutoPredictBtn.textContent = 'Auto Predict: OFF';
+        toggleAutoPredictBtn.style.borderColor = '#444';
+
+        // Clear auto prediction interval
+        if (predictionInterval) {
+          clearInterval(predictionInterval);
+        }
+
+        // Hide AI indicators
+        document.getElementById('aiIndicator').style.display = 'none';
+        document.getElementById('aiStatus').style.display = 'none';
+      }
+    }
+
+    // Initial load and setup refresh interval
+    fetchAndPlot();
+    refreshInterval = setInterval(fetchAndPlot, getRefreshRate(currentInterval));
+
+    // Handle window resize
+    window.addEventListener('resize', () => {
+      Plotly.Plots.resize('chart');
+    });
+  </script>
+</body>
+</html>

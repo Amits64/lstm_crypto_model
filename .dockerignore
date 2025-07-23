@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pyc
+.pytest_cache
+.venv
+env
+venv
+.git
+.gitignore
+Dockerfile
+docker-compose.yml
+README.md
+model/*
+!model/__init__.py
