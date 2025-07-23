@@ -46,6 +46,6 @@ jobs:
           push: true
           tags: |
             amits64/lstm_crypto_model:v${{ github.run_number }}
-            amits64/lstm_crypto_mode:llatest
+            amits64/lstm_crypto_model:latest
 
 
