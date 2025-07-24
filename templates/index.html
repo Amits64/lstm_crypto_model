@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Live Binance Candlestick Chart with AI Predictions</title>
+  <title>Ultimate Binance Trading Suite with AI Predictions</title>
   <script src="https://cdn.plot.ly/plotly-2.26.0.min.js"></script>
   <style>
     * {
@@ -109,6 +109,7 @@
       justify-content: center;
       gap: 15px;
       margin-bottom: 10px;
+      flex-wrap: wrap;
     }
 
     .btn {
@@ -123,6 +124,7 @@
       transition: all 0.3s ease;
       text-decoration: none;
       display: inline-block;
+      min-width: 120px;
     }
 
     .btn:hover {
@@ -139,6 +141,16 @@
     .btn.success {
       background: linear-gradient(145deg, #00ff88, #00cc66);
       border-color: #00ff88;
+    }
+
+    .btn.warning {
+      background: linear-gradient(145deg, #ffaa00, #ff8800);
+      border-color: #ffaa00;
+    }
+
+    .btn.danger {
+      background: linear-gradient(145deg, #ff4444, #cc0000);
+      border-color: #ff4444;
     }
 
     .btn:disabled {
@@ -160,11 +172,14 @@
       border-radius: 12px;
       border: 1px solid #333;
       overflow: hidden;
+      display: flex;
+      flex-direction: column;
     }
 
     #chart {
       width: 100%;
       height: 100%;
+      flex: 1;
     }
 
     .sidebar {
@@ -174,10 +189,16 @@
       border: 1px solid #333;
       padding: 20px;
       overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
     }
 
-    .prediction-panel {
-      margin-bottom: 25px;
+    .panel {
+      background: rgba(30, 30, 30, 0.8);
+      border-radius: 10px;
+      border: 1px solid #444;
+      padding: 15px;
     }
 
     .panel-title {
@@ -202,7 +223,6 @@
       background: linear-gradient(145deg, #2a2a2a, #1e1e1e);
       border-radius: 10px;
       padding: 15px;
-      border: 1px solid #444;
       margin-bottom: 15px;
     }
 
@@ -332,7 +352,7 @@
       color: #ff6666;
       padding: 15px;
       border-radius: 8px;
-      margin: 20px;
+      margin: 10px 0;
       text-align: center;
       font-weight: 500;
     }
@@ -344,6 +364,7 @@
       gap: 10px;
       color: #00d4ff;
       font-style: italic;
+      padding: 20px;
     }
 
     .spinner {
@@ -360,6 +381,180 @@
       100% { transform: rotate(360deg); }
     }
 
+    /* New panels */
+    .alerts-panel {
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .alert {
+      padding: 10px;
+      margin: 8px 0;
+      border-radius: 8px;
+      font-size: 13px;
+      border-left: 4px solid;
+    }
+
+    .alert-buy {
+      border-left-color: #00ff88;
+      background: rgba(0, 255, 136, 0.1);
+    }
+
+    .alert-sell {
+      border-left-color: #ff4444;
+      background: rgba(255, 68, 68, 0.1);
+    }
+
+    .alert-neutral {
+      border-left-color: #ffaa00;
+      background: rgba(255, 170, 0, 0.1);
+    }
+
+    .alert-header {
+      display: flex;
+      justify-content: space-between;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    .alert-time {
+      color: #999;
+      font-size: 11px;
+    }
+
+    .performance-panel .indicator-item {
+      padding: 6px 0;
+      font-size: 13px;
+    }
+
+    .trading-signals-panel .indicator-item {
+      padding: 8px 0;
+      border-bottom: 1px solid #333;
+    }
+
+    .signal-buy {
+      color: #00ff88;
+    }
+
+    .signal-sell {
+      color: #ff4444;
+    }
+
+    .signal-neutral {
+      color: #ffaa00;
+    }
+
+    .signal-strength {
+      font-size: 12px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .news-panel {
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .news-item {
+      padding: 10px 0;
+      border-bottom: 1px solid #333;
+    }
+
+    .news-title {
+      font-weight: 500;
+      margin-bottom: 5px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .sentiment-bullish {
+      color: #00ff88;
+    }
+
+    .sentiment-bearish {
+      color: #ff4444;
+    }
+
+    .sentiment-neutral {
+      color: #ffaa00;
+    }
+
+    .news-source {
+      font-size: 11px;
+      color: #999;
+    }
+
+    /* Multi-chart grid */
+    .multi-chart-container {
+      display: none;
+      padding: 20px;
+    }
+
+    .multi-chart-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 15px;
+    }
+
+    .mini-chart-container {
+      background: rgba(20, 20, 20, 0.9);
+      border-radius: 8px;
+      border: 1px solid #333;
+      overflow: hidden;
+      height: 250px;
+    }
+
+    .mini-chart-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 15px;
+      background: rgba(30, 30, 30, 0.8);
+      border-bottom: 1px solid #444;
+    }
+
+    .symbol-name {
+      font-weight: bold;
+      color: #00d4ff;
+    }
+
+    .price-indicator {
+      font-size: 14px;
+      font-weight: bold;
+      color: #fff;
+    }
+
+    .change-indicator {
+      font-size: 12px;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .change-positive {
+      background: rgba(0, 255, 136, 0.2);
+      color: #00ff88;
+    }
+
+    .change-negative {
+      background: rgba(255, 68, 68, 0.2);
+      color: #ff4444;
+    }
+
+    .mini-chart {
+      height: calc(100% - 50px);
+    }
+
+    /* View toggles */
+    .view-toggles {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+
+    /* Responsive adjustments */
     @media (max-width: 1200px) {
       .main-container {
         flex-direction: column;
@@ -368,7 +563,6 @@
 
       .sidebar {
         width: 100%;
-        order: -1;
       }
 
       .chart-container {
@@ -388,21 +582,32 @@
       .ai-controls {
         flex-wrap: wrap;
       }
+
+      .btn {
+        padding: 8px 15px;
+        font-size: 13px;
+        min-width: auto;
+      }
     }
   </style>
 </head>
 <body>
   <div class="header">
-    <h1 class="title">Live Binance Candlestick Chart with AI Predictions</h1>
+    <h1 class="title">Ultimate Binance Trading Suite with AI Predictions</h1>
     <div class="controls">
       <div class="control-group">
         <label class="control-label">Symbol:</label>
         <select id="symbolSelect">
-          {% for symbol in symbols %}
-            <option value="{{ symbol }}" {% if symbol == 'BTCUSDT' %}selected{% endif %}>
-              {{ symbol }}
-            </option>
-          {% endfor %}
+          <option value="BTCUSDT" selected>BTCUSDT</option>
+          <option value="ETHUSDT">ETHUSDT</option>
+          <option value="BNBUSDT">BNBUSDT</option>
+          <option value="SOLUSDT">SOLUSDT</option>
+          <option value="XRPUSDT">XRPUSDT</option>
+          <option value="ADAUSDT">ADAUSDT</option>
+          <option value="DOGEUSDT">DOGEUSDT</option>
+          <option value="DOTUSDT">DOTUSDT</option>
+          <option value="AVAXUSDT">AVAXUSDT</option>
+          <option value="MATICUSDT">MATICUSDT</option>
         </select>
       </div>
 
@@ -432,16 +637,30 @@
       <button id="getPredictionBtn" class="btn primary">Get AI Prediction</button>
       <button id="trainModelBtn" class="btn success">Train Model</button>
       <button id="toggleAutoPredictBtn" class="btn">Auto Predict: OFF</button>
+      <button id="startAutomationBtn" class="btn warning">Start Automation</button>
+      <button id="multiChartToggle" class="btn">Multi-Chart View</button>
+    </div>
+
+    <div class="view-toggles">
+      <button id="toggleAlerts" class="btn">Alerts</button>
+      <button id="togglePerformance" class="btn">Performance</button>
+      <button id="toggleSignals" class="btn">Signals</button>
+      <button id="toggleNews" class="btn">News</button>
     </div>
   </div>
 
   <div class="main-container">
     <div class="chart-container">
       <div id="chart"></div>
+      <div id="multiChartContainer" class="multi-chart-container">
+        <div class="multi-chart-grid">
+          <!-- Dynamically populated with mini charts -->
+        </div>
+      </div>
     </div>
 
     <div class="sidebar">
-      <div class="prediction-panel">
+      <div class="panel prediction-panel">
         <div class="panel-title">
           <span class="ai-icon"></span>
           AI Price Prediction
@@ -497,7 +716,7 @@
         </div>
       </div>
 
-      <div class="indicators-panel">
+      <div class="panel indicators-panel">
         <div class="panel-title">Technical Indicators</div>
         <div id="technicalIndicators">
           <div class="indicator-item">
@@ -522,6 +741,73 @@
           </div>
         </div>
       </div>
+
+      <div class="panel alerts-panel">
+        <div class="panel-title">
+          <span>🔔</span>
+          Active Alerts
+        </div>
+        <div id="alertsContainer">
+          <!-- Alerts will be dynamically inserted here -->
+          <div class="loading">
+            <div class="spinner"></div>
+            <span>Loading alerts...</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel performance-panel">
+        <div class="panel-title">
+          <span>📊</span>
+          Performance Metrics
+        </div>
+        <div id="performanceMetrics">
+          <div class="indicator-item">
+            <span>Uptime:</span>
+            <span id="uptime" class="indicator-value">--</span>
+          </div>
+          <div class="indicator-item">
+            <span>Data Points:</span>
+            <span id="dataPoints" class="indicator-value">--</span>
+          </div>
+          <div class="indicator-item">
+            <span>Avg Latency:</span>
+            <span id="avgLatency" class="indicator-value">--</span>
+          </div>
+          <div class="indicator-item">
+            <span>Error Rate:</span>
+            <span id="errorRate" class="indicator-value">--</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel trading-signals-panel">
+        <div class="panel-title">
+          <span>📈</span>
+          Trading Signals
+        </div>
+        <div id="tradingSignals">
+          <!-- Signals will be dynamically inserted here -->
+          <div class="loading">
+            <div class="spinner"></div>
+            <span>Analyzing market...</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel news-panel">
+        <div class="panel-title">
+          <span>📰</span>
+          Market News & Sentiment
+        </div>
+        <div id="newsContainer">
+          <!-- News items will be dynamically inserted here -->
+          <div class="loading">
+            <div class="spinner"></div>
+            <span>Loading news...</span>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -533,312 +819,743 @@
       <span id="aiStatus" style="display: none;">AI Active</span>
     </div>
     <div id="lastUpdate">Last updated: --</div>
+    <div id="systemStatus">System: Initializing...</div>
   </div>
 
   <script>
-    let currentSymbol = "BTCUSDT";
-    let currentInterval = "5m";
-    let refreshInterval;
-    let predictionInterval;
-    let autoPredictEnabled = false;
+    // Global state management
+    const appState = {
+      currentSymbol: "BTCUSDT",
+      currentInterval: "5m",
+      refreshInterval: null,
+      predictionInterval: null,
+      automationInterval: null,
+      autoPredictEnabled: false,
+      automationEnabled: false,
+      multiChartEnabled: false,
+      watchlist: ['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'SOLUSDT', 'XRPUSDT'],
+      alerts: [],
+      performanceMetrics: {
+        startTime: Date.now(),
+        requests: 0,
+        errors: 0,
+        dataPoints: 0
+      },
+      tradingSignals: [],
+      newsItems: []
+    };
 
-    // DOM elements
-    const symbolSelect = document.getElementById("symbolSelect");
-    const intervalSelect = document.getElementById("intervalSelect");
-    const getPredictionBtn = document.getElementById("getPredictionBtn");
-    const trainModelBtn = document.getElementById("trainModelBtn");
-    const toggleAutoPredictBtn = document.getElementById("toggleAutoPredictBtn");
+    // DOM elements cache
+    const elements = {
+      symbolSelect: document.getElementById("symbolSelect"),
+      intervalSelect: document.getElementById("intervalSelect"),
+      chart: document.getElementById("chart"),
+      lastUpdate: document.getElementById("lastUpdate"),
+      getPredictionBtn: document.getElementById("getPredictionBtn"),
+      trainModelBtn: document.getElementById("trainModelBtn"),
+      toggleAutoPredictBtn: document.getElementById("toggleAutoPredictBtn"),
+      startAutomationBtn: document.getElementById("startAutomationBtn"),
+      multiChartToggle: document.getElementById("multiChartToggle"),
+      toggleAlerts: document.getElementById("toggleAlerts"),
+      togglePerformance: document.getElementById("togglePerformance"),
+      toggleSignals: document.getElementById("toggleSignals"),
+      toggleNews: document.getElementById("toggleNews"),
+      systemStatus: document.getElementById("systemStatus"),
+      multiChartContainer: document.getElementById("multiChartContainer"),
+      multiChartGrid: document.querySelector(".multi-chart-grid")
+    };
 
-    // Event listeners
-    symbolSelect.addEventListener("change", (e) => {
-      currentSymbol = e.target.value;
+    // Initialize the application
+    function init() {
+      setupEventListeners();
       fetchAndPlot();
-      if (autoPredictEnabled) {
-        getPrediction();
-      }
-    });
-
-    intervalSelect.addEventListener("change", (e) => {
-      currentInterval = e.target.value;
-      fetchAndPlot();
-
-      // Adjust refresh rate based on interval
-      clearInterval(refreshInterval);
-      const refreshRate = getRefreshRate(currentInterval);
-      refreshInterval = setInterval(fetchAndPlot, refreshRate);
-
-      if (autoPredictEnabled) {
-        getPrediction();
-      }
-    });
-
-    getPredictionBtn.addEventListener("click", getPrediction);
-    trainModelBtn.addEventListener("click", trainModel);
-    toggleAutoPredictBtn.addEventListener("click", toggleAutoPredict);
-
-    function getRefreshRate(interval) {
-      const rates = {
-        '1m': 5000,   // 5 seconds
-        '3m': 10000,  // 10 seconds
-        '5m': 15000,  // 15 seconds
-        '15m': 30000, // 30 seconds
-        '30m': 60000, // 1 minute
-        '1h': 120000, // 2 minutes
-        '2h': 240000, // 4 minutes
-        '4h': 300000, // 5 minutes
-        '6h': 300000, // 5 minutes
-        '8h': 300000, // 5 minutes
-        '12h': 600000, // 10 minutes
-        '1d': 600000, // 10 minutes
-        '3d': 1800000, // 30 minutes
-        '1w': 3600000, // 1 hour
-        '1M': 3600000  // 1 hour
-      };
-      return rates[interval] || 15000;
+      startPerformanceTracking();
+      startNewsAnalysis();
+      setupMultiChartView();
+      updateSystemStatus("System: Operational");
     }
 
+    // Set up all event listeners
+    function setupEventListeners() {
+      elements.symbolSelect.addEventListener("change", handleSymbolChange);
+      elements.intervalSelect.addEventListener("change", handleIntervalChange);
+      elements.getPredictionBtn.addEventListener("click", getPrediction);
+      elements.trainModelBtn.addEventListener("click", trainModel);
+      elements.toggleAutoPredictBtn.addEventListener("click", toggleAutoPredict);
+      elements.startAutomationBtn.addEventListener("click", toggleAutomation);
+      elements.multiChartToggle.addEventListener("click", toggleMultiChartView);
+
+      elements.toggleAlerts.addEventListener("click", () => togglePanel('alerts-panel'));
+      elements.togglePerformance.addEventListener("click", () => togglePanel('performance-panel'));
+      elements.toggleSignals.addEventListener("click", () => togglePanel('trading-signals-panel'));
+      elements.toggleNews.addEventListener("click", () => togglePanel('news-panel'));
+
+      window.addEventListener('resize', () => {
+        Plotly.Plots.resize('chart');
+      });
+    }
+
+    // Handle symbol change
+    function handleSymbolChange(e) {
+      appState.currentSymbol = e.target.value;
+      fetchAndPlot();
+      if (appState.autoPredictEnabled) {
+        getPrediction();
+      }
+    }
+
+    // Handle interval change
+    function handleIntervalChange(e) {
+      appState.currentInterval = e.target.value;
+      clearInterval(appState.refreshInterval);
+      setupRefreshInterval();
+      fetchAndPlot();
+      if (appState.autoPredictEnabled) {
+        getPrediction();
+      }
+    }
+
+    // Set up the refresh interval based on current interval
+    function setupRefreshInterval() {
+      const refreshRates = {
+        '1m': 5000,    '3m': 10000,   '5m': 15000,   '15m': 30000,
+        '30m': 60000,  '1h': 120000,  '2h': 240000,  '4h': 300000,
+        '6h': 360000,  '8h': 480000,  '12h': 720000, '1d': 1800000,
+        '3d': 3600000, '1w': 7200000, '1M': 14400000
+      };
+
+      const refreshRate = refreshRates[appState.currentInterval] || 15000;
+      appState.refreshInterval = setInterval(fetchAndPlot, refreshRate);
+    }
+
+    // Fetch and plot chart data
     function fetchAndPlot() {
-      fetch(`/candles?symbol=${currentSymbol}&interval=${currentInterval}`)
+      appState.performanceMetrics.requests++;
+      appState.performanceMetrics.dataPoints++;
+
+      fetch(`/candles?symbol=${appState.currentSymbol}&interval=${appState.currentInterval}`)
         .then(res => res.json())
         .then(data => {
           if (data.error) {
-            console.error(data.error);
-            document.getElementById('chart').innerHTML =
-              `<div class="error-message">Error: ${data.error}</div>`;
+            handleError(data.error);
             return;
           }
-
-          const times = data.map(d => new Date(d.time));
-
-          // Candlestick trace with enhanced styling
-          const candlestickTrace = {
-            x: times,
-            open: data.map(d => d.open),
-            high: data.map(d => d.high),
-            low: data.map(d => d.low),
-            close: data.map(d => d.close),
-            type: 'candlestick',
-            name: currentSymbol,
-            increasing: {
-              line: { color: '#00ff88', width: 1 },
-              fillcolor: 'rgba(0, 255, 136, 0.3)'
-            },
-            decreasing: {
-              line: { color: '#ff4444', width: 1 },
-              fillcolor: 'rgba(255, 68, 68, 0.3)'
-            },
-            line: { width: 1 },
-            whiskerwidth: 0.8,
-            xaxis: 'x',
-            yaxis: 'y'
-          };
-
-          const layout = {
-            dragmode: 'pan',
-            showlegend: false,
-            paper_bgcolor: 'rgba(0,0,0,0)',
-            plot_bgcolor: 'rgba(10,10,10,0.8)',
-            font: { color: '#e0e0e0', family: 'Segoe UI' },
-
-            xaxis: {
-              rangeslider: {
-                visible: true,
-                bgcolor: 'rgba(40,40,40,0.8)',
-                bordercolor: '#555',
-                borderwidth: 1,
-                thickness: 0.08
-              },
-              showgrid: true,
-              gridcolor: 'rgba(255,255,255,0.1)',
-              gridwidth: 1,
-              tickfont: { color: '#ccc', size: 11 },
-              title: { text: 'Time', font: { color: '#ccc', size: 12 } },
-              showspikes: true,
-              spikecolor: '#00d4ff',
-              spikethickness: 1,
-              spikedash: 'dot'
-            },
-
-            yaxis: {
-              showgrid: true,
-              gridcolor: 'rgba(255,255,255,0.1)',
-              gridwidth: 1,
-              tickfont: { color: '#ccc', size: 11 },
-              title: { text: 'Price (USDT)', font: { color: '#ccc', size: 12 } },
-              side: 'right',
-              showspikes: true,
-              spikecolor: '#00d4ff',
-              spikethickness: 1,
-              spikedash: 'dot'
-            },
-
-            margin: { l: 60, r: 80, t: 40, b: 60 },
-
-            hovermode: 'x unified',
-            hoverlabel: {
-              bgcolor: 'rgba(0,0,0,0.8)',
-              bordercolor: '#00d4ff',
-              font: { color: '#fff', size: 12 }
-            }
-          };
-
-          const config = {
-            displayModeBar: true,
-            displaylogo: false,
-            modeBarButtonsToRemove: ['lasso2d', 'select2d'],
-            scrollZoom: true,
-            responsive: true
-          };
-
-          Plotly.newPlot('chart', [candlestickTrace], layout, config);
-
-          // Update last update time
-          document.getElementById('lastUpdate').textContent =
-            `Last updated: ${new Date().toLocaleTimeString()}`;
+          plotCandlestickChart(data);
+          updateLastUpdateTime();
+          analyzeDataForSignals(data);
+          updatePerformanceMetrics();
         })
         .catch(error => {
-          console.error('Fetch error:', error);
-          document.getElementById('chart').innerHTML =
-            `<div class="error-message">Network Error: Unable to fetch data</div>`;
+          appState.performanceMetrics.errors++;
+          handleError(error.message);
         });
     }
 
+    // Plot candlestick chart
+    function plotCandlestickChart(data) {
+      const times = data.map(d => new Date(d.time));
+
+      const candlestickTrace = {
+        x: times,
+        open: data.map(d => d.open),
+        high: data.map(d => d.high),
+        low: data.map(d => d.low),
+        close: data.map(d => d.close),
+        type: 'candlestick',
+        name: appState.currentSymbol,
+        increasing: {
+          line: { color: '#00ff88', width: 1 },
+          fillcolor: 'rgba(0, 255, 136, 0.3)'
+        },
+        decreasing: {
+          line: { color: '#ff4444', width: 1 },
+          fillcolor: 'rgba(255, 68, 68, 0.3)'
+        },
+        line: { width: 1 },
+        whiskerwidth: 0.8,
+        xaxis: 'x',
+        yaxis: 'y'
+      };
+
+      const layout = {
+        dragmode: 'pan',
+        showlegend: false,
+        paper_bgcolor: 'rgba(0,0,0,0)',
+        plot_bgcolor: 'rgba(10,10,10,0.8)',
+        font: { color: '#e0e0e0', family: 'Segoe UI' },
+        xaxis: {
+          rangeslider: {
+            visible: true,
+            bgcolor: 'rgba(40,40,40,0.8)',
+            bordercolor: '#555',
+            borderwidth: 1,
+            thickness: 0.08
+          },
+          showgrid: true,
+          gridcolor: 'rgba(255,255,255,0.1)',
+          gridwidth: 1,
+          tickfont: { color: '#ccc', size: 11 },
+          title: { text: 'Time', font: { color: '#ccc', size: 12 } },
+          showspikes: true,
+          spikecolor: '#00d4ff',
+          spikethickness: 1,
+          spikedash: 'dot'
+        },
+        yaxis: {
+          showgrid: true,
+          gridcolor: 'rgba(255,255,255,0.1)',
+          gridwidth: 1,
+          tickfont: { color: '#ccc', size: 11 },
+          title: { text: 'Price (USDT)', font: { color: '#ccc', size: 12 } },
+          side: 'right',
+          showspikes: true,
+          spikecolor: '#00d4ff',
+          spikethickness: 1,
+          spikedash: 'dot'
+        },
+        margin: { l: 60, r: 80, t: 40, b: 60 },
+        hovermode: 'x unified',
+        hoverlabel: {
+          bgcolor: 'rgba(0,0,0,0.8)',
+          bordercolor: '#00d4ff',
+          font: { color: '#fff', size: 12 }
+        }
+      };
+
+      const config = {
+        displayModeBar: true,
+        displaylogo: false,
+        modeBarButtonsToRemove: ['lasso2d', 'select2d'],
+        scrollZoom: true,
+        responsive: true
+      };
+
+      Plotly.react('chart', [candlestickTrace], layout, config);
+    }
+
+    // Get AI prediction
     function getPrediction() {
-      // Show loading state
       document.getElementById('predictionCard').style.display = 'none';
       document.getElementById('predictionError').style.display = 'none';
-      document.getElementById('predictionLoading').style.display = 'block';
+      document.getElementById('predictionLoading').style.display = 'flex';
 
-      fetch(`/predict?symbol=${currentSymbol}&interval=${currentInterval}`)
+      fetch(`/predict?symbol=${appState.currentSymbol}&interval=${appState.currentInterval}`)
         .then(res => res.json())
         .then(data => {
           document.getElementById('predictionLoading').style.display = 'none';
 
           if (data.error) {
             document.getElementById('predictionError').style.display = 'block';
-            console.error('Prediction error:', data.error);
             return;
           }
 
-          // Update prediction display
-          document.getElementById('currentPrice').textContent = `${data.current_price.toFixed(2)}`;
-          document.getElementById('predictedPrice').textContent = `${data.predicted_price.toFixed(2)}`;
-          document.getElementById('priceChange').textContent = `${data.price_change.toFixed(2)}`;
-          document.getElementById('changePercent').textContent = `${data.price_change_percent.toFixed(2)}%`;
-          document.getElementById('direction').textContent = data.direction;
-          document.getElementById('confidence').textContent = `${data.confidence.toFixed(1)}%`;
-          document.getElementById('predictionTime').textContent = new Date(data.timestamp).toLocaleTimeString();
-
-          // Update confidence bar
-          document.getElementById('confidenceFill').style.width = `${data.confidence}%`;
-
-          // Color coding based on direction
-          const predictedPriceElement = document.getElementById('predictedPrice');
-          const directionElement = document.getElementById('direction');
-          const priceChangeElement = document.getElementById('priceChange');
-          const changePercentElement = document.getElementById('changePercent');
-
-          if (data.direction === 'UP') {
-            predictedPriceElement.className = 'predicted-price price-up';
-            directionElement.className = 'price-up';
-            priceChangeElement.className = 'price-up';
-            changePercentElement.className = 'price-up';
-          } else if (data.direction === 'DOWN') {
-            predictedPriceElement.className = 'predicted-price price-down';
-            directionElement.className = 'price-down';
-            priceChangeElement.className = 'price-down';
-            changePercentElement.className = 'price-down';
-          } else {
-            predictedPriceElement.className = 'predicted-price price-neutral';
-            directionElement.className = 'price-neutral';
-            priceChangeElement.className = 'price-neutral';
-            changePercentElement.className = 'price-neutral';
-          }
-
-          // Update technical indicators
-          if (data.indicators) {
-            document.getElementById('ma20').textContent =
-              data.indicators.ma_20 ? `${data.indicators.ma_20.toFixed(2)}` : '--';
-            document.getElementById('ma50').textContent =
-              data.indicators.ma_50 ? `${data.indicators.ma_50.toFixed(2)}` : '--';
-            document.getElementById('rsi').textContent =
-              data.indicators.rsi ? data.indicators.rsi.toFixed(2) : '--';
-            document.getElementById('macd').textContent =
-              data.indicators.macd ? data.indicators.macd.toFixed(4) : '--';
-            document.getElementById('macdSignal').textContent =
-              data.indicators.macd_signal ? data.indicators.macd_signal.toFixed(4) : '--';
-          }
-
-          document.getElementById('predictionCard').style.display = 'block';
-
-          // Show AI indicator
+          updatePredictionDisplay(data);
           document.getElementById('aiIndicator').style.display = 'block';
           document.getElementById('aiStatus').style.display = 'block';
         })
         .catch(error => {
           document.getElementById('predictionLoading').style.display = 'none';
           document.getElementById('predictionError').style.display = 'block';
-          console.error('Prediction fetch error:', error);
         });
     }
 
-    function trainModel() {
-      trainModelBtn.disabled = true;
-      trainModelBtn.textContent = 'Training...';
+    // Update prediction display
+    function updatePredictionDisplay(data) {
+      document.getElementById('currentPrice').textContent = `${data.current_price.toFixed(2)}`;
+      document.getElementById('predictedPrice').textContent = `${data.predicted_price.toFixed(2)}`;
+      document.getElementById('priceChange').textContent = `${data.price_change.toFixed(2)}`;
+      document.getElementById('changePercent').textContent = `${data.price_change_percent.toFixed(2)}%`;
+      document.getElementById('direction').textContent = data.direction;
+      document.getElementById('confidence').textContent = `${data.confidence.toFixed(1)}%`;
+      document.getElementById('predictionTime').textContent = new Date(data.timestamp).toLocaleTimeString();
+      document.getElementById('confidenceFill').style.width = `${data.confidence}%`;
 
-      fetch('/train')
+      const directionClass = data.direction === 'UP' ? 'price-up' :
+                            data.direction === 'DOWN' ? 'price-down' : 'price-neutral';
+
+      document.getElementById('predictedPrice').className = `predicted-price ${directionClass}`;
+      document.getElementById('direction').className = directionClass;
+      document.getElementById('priceChange').className = directionClass;
+      document.getElementById('changePercent').className = directionClass;
+
+      if (data.indicators) {
+        document.getElementById('ma20').textContent = data.indicators.ma_20 ? `${data.indicators.ma_20.toFixed(2)}` : '--';
+        document.getElementById('ma50').textContent = data.indicators.ma_50 ? `${data.indicators.ma_50.toFixed(2)}` : '--';
+        document.getElementById('rsi').textContent = data.indicators.rsi ? data.indicators.rsi.toFixed(2) : '--';
+        document.getElementById('macd').textContent = data.indicators.macd ? data.indicators.macd.toFixed(4) : '--';
+        document.getElementById('macdSignal').textContent = data.indicators.macd_signal ? data.indicators.macd_signal.toFixed(4) : '--';
+      }
+
+      document.getElementById('predictionCard').style.display = 'block';
+    }
+
+    // Train model
+    function trainModel() {
+      elements.trainModelBtn.disabled = true;
+      elements.trainModelBtn.textContent = 'Training...';
+
+      fetch(`/train?symbol=${appState.currentSymbol}&interval=${appState.currentInterval}`)
         .then(res => res.json())
         .then(data => {
           if (data.status === 'success') {
-            alert('Model training completed successfully!');
+            showAlert('Model training completed successfully!', 'success');
           } else {
-            alert(`Training failed: ${data.message}`);
+            showAlert(`Training failed: ${data.message}`, 'danger');
           }
         })
         .catch(error => {
-          alert(`Training error: ${error.message}`);
+          showAlert(`Training error: ${error.message}`, 'danger');
         })
         .finally(() => {
-          trainModelBtn.disabled = false;
-          trainModelBtn.textContent = 'Train Model';
+          elements.trainModelBtn.disabled = false;
+          elements.trainModelBtn.textContent = 'Train Model';
         });
     }
 
+    // Toggle auto-predict
     function toggleAutoPredict() {
-      autoPredictEnabled = !autoPredictEnabled;
+      appState.autoPredictEnabled = !appState.autoPredictEnabled;
 
-      if (autoPredictEnabled) {
-        toggleAutoPredictBtn.textContent = 'Auto Predict: ON';
-        toggleAutoPredictBtn.style.borderColor = '#00ff88';
-
-        // Get initial prediction
+      if (appState.autoPredictEnabled) {
+        elements.toggleAutoPredictBtn.textContent = 'Auto Predict: ON';
+        elements.toggleAutoPredictBtn.style.borderColor = '#00ff88';
         getPrediction();
-
-        // Set up auto prediction interval (every 2 minutes)
-        predictionInterval = setInterval(getPrediction, 120000);
+        appState.predictionInterval = setInterval(getPrediction, 120000);
       } else {
-        toggleAutoPredictBtn.textContent = 'Auto Predict: OFF';
-        toggleAutoPredictBtn.style.borderColor = '#444';
-
-        // Clear auto prediction interval
-        if (predictionInterval) {
-          clearInterval(predictionInterval);
-        }
-
-        // Hide AI indicators
+        elements.toggleAutoPredictBtn.textContent = 'Auto Predict: OFF';
+        elements.toggleAutoPredictBtn.style.borderColor = '#444';
+        clearInterval(appState.predictionInterval);
         document.getElementById('aiIndicator').style.display = 'none';
         document.getElementById('aiStatus').style.display = 'none';
       }
     }
 
-    // Initial load and setup refresh interval
-    fetchAndPlot();
-    refreshInterval = setInterval(fetchAndPlot, getRefreshRate(currentInterval));
+    // Toggle automation
+    function toggleAutomation() {
+      appState.automationEnabled = !appState.automationEnabled;
 
-    // Handle window resize
-    window.addEventListener('resize', () => {
-      Plotly.Plots.resize('chart');
-    });
+      if (appState.automationEnabled) {
+        elements.startAutomationBtn.textContent = 'Stop Automation';
+        elements.startAutomationBtn.classList.add('danger');
+        elements.startAutomationBtn.classList.remove('warning');
+        startAutomationEngine();
+      } else {
+        elements.startAutomationBtn.textContent = 'Start Automation';
+        elements.startAutomationBtn.classList.add('warning');
+        elements.startAutomationBtn.classList.remove('danger');
+        stopAutomationEngine();
+      }
+    }
+
+    // Start automation engine
+    function startAutomationEngine() {
+      // Start monitoring multiple symbols
+      appState.automationInterval = setInterval(() => {
+        monitorMultipleSymbols();
+        scanForTradingSignals();
+        checkForAlerts();
+      }, 30000);
+
+      updateSystemStatus("System: Automation Active");
+      showAlert("Automation engine started", "neutral");
+    }
+
+    // Stop automation engine
+    function stopAutomationEngine() {
+      clearInterval(appState.automationInterval);
+      updateSystemStatus("System: Operational");
+      showAlert("Automation engine stopped", "neutral");
+    }
+
+    // Toggle multi-chart view
+    function toggleMultiChartView() {
+      appState.multiChartEnabled = !appState.multiChartEnabled;
+
+      if (appState.multiChartEnabled) {
+        elements.multiChartToggle.textContent = 'Single Chart';
+        elements.chart.style.display = 'none';
+        elements.multiChartContainer.style.display = 'block';
+        renderMiniCharts();
+      } else {
+        elements.multiChartToggle.textContent = 'Multi-Chart View';
+        elements.chart.style.display = 'block';
+        elements.multiChartContainer.style.display = 'none';
+      }
+    }
+
+    // Set up multi-chart view
+    function setupMultiChartView() {
+      elements.multiChartGrid.innerHTML = '';
+
+      appState.watchlist.forEach(symbol => {
+        const container = document.createElement('div');
+        container.className = 'mini-chart-container';
+        container.id = `chart-${symbol}`;
+        container.innerHTML = `
+          <div class="mini-chart-header">
+            <span class="symbol-name">${symbol}</span>
+            <span class="price-indicator" id="price-${symbol}">--</span>
+            <span class="change-indicator" id="change-${symbol}">--</span>
+          </div>
+          <div class="mini-chart" id="mini-chart-${symbol}"></div>
+        `;
+        elements.multiChartGrid.appendChild(container);
+      });
+    }
+
+    // Render mini charts for watchlist
+    function renderMiniCharts() {
+      appState.watchlist.forEach(symbol => {
+        if (symbol === appState.currentSymbol) return;
+
+        fetch(`/candles?symbol=${symbol}&interval=${appState.currentInterval}&limit=50`)
+          .then(res => res.json())
+          .then(data => {
+            if (data.error) return;
+            renderMiniChart(symbol, data);
+          });
+      });
+    }
+
+    // Render a single mini chart
+    function renderMiniChart(symbol, data) {
+      const times = data.map(d => new Date(d.time));
+      const lastCandle = data[data.length - 1];
+      const prevCandle = data[data.length - 2];
+
+      // Update price indicators
+      document.getElementById(`price-${symbol}`).textContent = lastCandle.close.toFixed(2);
+
+      if (prevCandle) {
+        const change = ((lastCandle.close - prevCandle.close) / prevCandle.close) * 100;
+        const changeElement = document.getElementById(`change-${symbol}`);
+        changeElement.textContent = `${change >= 0 ? '+' : ''}${change.toFixed(2)}%`;
+        changeElement.className = `change-indicator ${change >= 0 ? 'change-positive' : 'change-negative'}`;
+      }
+
+      // Create the chart
+      const trace = {
+        x: times,
+        close: data.map(d => d.close),
+        type: 'scatter',
+        mode: 'lines',
+        line: { color: '#00d4ff', width: 1 },
+        showlegend: false
+      };
+
+      const layout = {
+        paper_bgcolor: 'rgba(0,0,0,0)',
+        plot_bgcolor: 'rgba(0,0,0,0)',
+        margin: { l: 30, r: 30, t: 10, b: 30 },
+        xaxis: {
+          showgrid: false,
+          showticklabels: false,
+          rangeslider: { visible: false }
+        },
+        yaxis: {
+          showgrid: true,
+          gridcolor: 'rgba(255,255,255,0.1)',
+          side: 'right',
+          tickfont: { size: 9 }
+        }
+      };
+
+      const config = {
+        displayModeBar: false,
+        responsive: true
+      };
+
+      Plotly.newPlot(`mini-chart-${symbol}`, [trace], layout, config);
+    }
+
+    // Toggle panel visibility
+    function togglePanel(panelClass) {
+      const panel = document.querySelector(`.${panelClass}`);
+      panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    }
+
+    // Start performance tracking
+    function startPerformanceTracking() {
+      setInterval(() => {
+        updatePerformanceMetrics();
+      }, 5000);
+    }
+
+    // Update performance metrics
+    function updatePerformanceMetrics() {
+      const uptime = Date.now() - appState.performanceMetrics.startTime;
+      const minutes = Math.floor(uptime / 60000);
+      const seconds = Math.floor((uptime % 60000) / 1000);
+
+      document.getElementById('uptime').textContent = `${minutes}m ${seconds}s`;
+      document.getElementById('dataPoints').textContent = appState.performanceMetrics.dataPoints.toLocaleString();
+
+      // Simulate latency
+      const latency = Math.random() * 100;
+      document.getElementById('avgLatency').textContent = `${latency.toFixed(0)}ms`;
+
+      // Calculate error rate
+      const errorRate = appState.performanceMetrics.requests > 0 ?
+        (appState.performanceMetrics.errors / appState.performanceMetrics.requests * 100).toFixed(1) :
+        '0.0';
+      document.getElementById('errorRate').textContent = `${errorRate}%`;
+    }
+
+    // Start news analysis
+    function startNewsAnalysis() {
+      setInterval(() => {
+        fetchMarketNews();
+      }, 300000); // Every 5 minutes
+      fetchMarketNews(); // Initial fetch
+    }
+
+    // Fetch market news
+    function fetchMarketNews() {
+      // Simulated news data
+      const news = [
+        {
+          title: 'Bitcoin ETF Approval Expected Soon',
+          sentiment: 0.85,
+          source: 'CryptoNews',
+          timestamp: Date.now() - 60000
+        },
+        {
+          title: 'Fed Interest Rate Decision Impacts Crypto Markets',
+          sentiment: -0.45,
+          source: 'Financial Times',
+          timestamp: Date.now() - 3600000
+        },
+        {
+          title: 'Ethereum 2.0 Upgrade Completes Successfully',
+          sentiment: 0.75,
+          source: 'CoinDesk',
+          timestamp: Date.now() - 7200000
+        },
+        {
+          title: 'Regulatory Concerns Grow for Stablecoins',
+          sentiment: -0.65,
+          source: 'Bloomberg',
+          timestamp: Date.now() - 10800000
+        }
+      ];
+
+      appState.newsItems = news;
+      renderNewsItems();
+    }
+
+    // Render news items
+    function renderNewsItems() {
+      const container = document.getElementById('newsContainer');
+      container.innerHTML = '';
+
+      appState.newsItems.forEach(item => {
+        const sentimentClass = item.sentiment > 0.3 ? 'sentiment-bullish' :
+                              item.sentiment < -0.3 ? 'sentiment-bearish' : 'sentiment-neutral';
+        const sentimentIcon = item.sentiment > 0.3 ? '📈' :
+                             item.sentiment < -0.3 ? '📉' : '➖';
+
+        const newsElement = document.createElement('div');
+        newsElement.className = 'news-item';
+        newsElement.innerHTML = `
+          <div class="news-title">
+            <span class="${sentimentClass}">${sentimentIcon}</span>
+            ${item.title}
+          </div>
+          <div class="news-source">${item.source} • ${new Date(item.timestamp).toLocaleTimeString()}</div>
+        `;
+        container.appendChild(newsElement);
+      });
+    }
+
+    // Analyze data for trading signals
+    function analyzeDataForSignals(data) {
+      // Simulated signal detection
+      if (data.length < 20) return;
+
+      const closes = data.map(d => d.close);
+      const lastClose = closes[closes.length - 1];
+      const sma20 = calculateSMA(closes, 20);
+      const rsi = calculateRSI(closes, 14);
+
+      // Generate signals based on indicators
+      const newSignals = [];
+
+      if (lastClose > sma20[sma20.length - 1] && rsi[rsi.length - 1] < 30) {
+        newSignals.push({
+          symbol: appState.currentSymbol,
+          type: 'BUY',
+          strength: 85,
+          message: 'Oversold with price above MA20',
+          timestamp: Date.now()
+        });
+      }
+
+      if (lastClose < sma20[sma20.length - 1] && rsi[rsi.length - 1] > 70) {
+        newSignals.push({
+          symbol: appState.currentSymbol,
+          type: 'SELL',
+          strength: 80,
+          message: 'Overbought with price below MA20',
+          timestamp: Date.now()
+        });
+      }
+
+      // Add new signals to state
+      appState.tradingSignals = [...appState.tradingSignals, ...newSignals].slice(-5);
+      renderTradingSignals();
+    }
+
+    // Render trading signals
+    function renderTradingSignals() {
+      const container = document.getElementById('tradingSignals');
+      container.innerHTML = '';
+
+      appState.tradingSignals.forEach(signal => {
+        const signalClass = signal.type === 'BUY' ? 'signal-buy' :
+                          signal.type === 'SELL' ? 'signal-sell' : 'signal-neutral';
+
+        const signalElement = document.createElement('div');
+        signalElement.className = 'indicator-item';
+        signalElement.innerHTML = `
+          <div>
+            <span class="${signalClass}">${signal.symbol} ${signal.type}</span>
+            <div class="signal-desc">${signal.message}</div>
+          </div>
+          <div class="signal-strength">${signal.strength}%</div>
+        `;
+        container.appendChild(signalElement);
+      });
+    }
+
+    // Check for alerts
+    function checkForAlerts() {
+      // Simulated alert detection
+      const newAlerts = [];
+      const changeThreshold = 2; // 2%
+
+      // Price change alert
+      fetch(`/candles?symbol=${appState.currentSymbol}&interval=${appState.currentInterval}&limit=2`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.length < 2) return;
+
+          const current = data[0].close;
+          const previous = data[1].close;
+          const change = ((current - previous) / previous) * 100;
+
+          if (Math.abs(change) > changeThreshold) {
+            newAlerts.push({
+              symbol: appState.currentSymbol,
+              type: change > 0 ? 'PRICE_SURGE' : 'PRICE_DROP',
+              message: `Price ${change > 0 ? 'increased' : 'decreased'} by ${Math.abs(change).toFixed(2)}%`,
+              level: change > 0 ? 'buy' : 'sell',
+              timestamp: Date.now()
+            });
+          }
+
+          // Add new alerts to state
+          appState.alerts = [...appState.alerts, ...newAlerts].slice(-5);
+          renderAlerts();
+        });
+    }
+
+    // Render alerts
+    function renderAlerts() {
+      const container = document.getElementById('alertsContainer');
+      container.innerHTML = '';
+
+      appState.alerts.forEach(alert => {
+        const alertClass = alert.level === 'buy' ? 'alert-buy' :
+                         alert.level === 'sell' ? 'alert-sell' : 'alert-neutral';
+
+        const alertElement = document.createElement('div');
+        alertElement.className = `alert ${alertClass}`;
+        alertElement.innerHTML = `
+          <div class="alert-header">
+            <strong>${alert.symbol} ${alert.type}</strong>
+            <span class="alert-time">${new Date(alert.timestamp).toLocaleTimeString()}</span>
+          </div>
+          <div class="alert-message">${alert.message}</div>
+        `;
+        container.appendChild(alertElement);
+      });
+    }
+
+    // Show alert notification
+    function showAlert(message, type) {
+      const alertClass = type === 'success' ? 'alert-buy' :
+                        type === 'danger' ? 'alert-sell' : 'alert-neutral';
+
+      const alertElement = document.createElement('div');
+      alertElement.className = `alert ${alertClass}`;
+      alertElement.innerHTML = `
+        <div class="alert-message">${message}</div>
+      `;
+
+      document.getElementById('alertsContainer').prepend(alertElement);
+
+      // Auto-remove after 5 seconds
+      setTimeout(() => {
+        alertElement.remove();
+      }, 5000);
+    }
+
+    // Update last update time
+    function updateLastUpdateTime() {
+      elements.lastUpdate.textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
+    }
+
+    // Update system status
+    function updateSystemStatus(message) {
+      elements.systemStatus.textContent = message;
+    }
+
+    // Handle errors
+    function handleError(message) {
+      const errorElement = document.createElement('div');
+      errorElement.className = 'error-message';
+      errorElement.textContent = `Error: ${message}`;
+      document.getElementById('chart').prepend(errorElement);
+
+      // Auto-remove after 5 seconds
+      setTimeout(() => {
+        errorElement.remove();
+      }, 5000);
+    }
+
+    // Utility function: Calculate Simple Moving Average
+    function calculateSMA(values, period) {
+      const result = [];
+      for (let i = period - 1; i < values.length; i++) {
+        const sum = values.slice(i - period + 1, i + 1).reduce((a, b) => a + b, 0);
+        result.push(sum / period);
+      }
+      return result;
+    }
+
+    // Utility function: Calculate Relative Strength Index
+    function calculateRSI(values, period) {
+      const gains = [];
+      const losses = [];
+
+      for (let i = 1; i < values.length; i++) {
+        const change = values[i] - values[i - 1];
+        gains.push(change > 0 ? change : 0);
+        losses.push(change < 0 ? Math.abs(change) : 0);
+      }
+
+      const result = [];
+      for (let i = period - 1; i < gains.length; i++) {
+        const avgGain = gains.slice(i - period + 1, i + 1).reduce((a, b) => a + b, 0) / period;
+        const avgLoss = losses.slice(i - period + 1, i + 1).reduce((a, b) => a + b, 0) / period;
+        const rs = avgLoss === 0 ? 100 : avgGain / avgLoss;
+        result.push(100 - (100 / (1 + rs)));
+      }
+      return result;
+    }
+
+    // Initialize the application when DOM is ready
+    document.addEventListener('DOMContentLoaded', init);
   </script>
 </body>
 </html>

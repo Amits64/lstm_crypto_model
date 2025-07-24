@@ -1,3 +1,4 @@
+# app.py
 from flask import Flask, render_template, request, jsonify
 from binance.client import Client
 from datetime import datetime, timedelta
@@ -11,15 +12,18 @@ from sklearn.preprocessing import MinMaxScaler
 import warnings
 import threading
 import traceback
+from concurrent.futures import ThreadPoolExecutor
+import sys
 
+executor = ThreadPoolExecutor(max_workers=1)  # Single-threaded for safety
 traceback.print_exc()  # Print full error details
-
 warnings.filterwarnings('ignore')
 
 app = Flask(__name__)
 
 # Initialize Binance client
 client = Client()
+
 
 # Handle different versions of python-binance
 def get_binance_interval(interval_str):
@@ -153,37 +157,49 @@ class CNNLSTMModel(nn.Module):
         return x
 
 
-# Global variables for model and scaler
-model = None
-scaler = None
-y_scaler = None
+# Global variables for model and scaler - now per interval
+models = {}  # Dictionary to store models by interval
+scalers = {}  # Dictionary to store scalers by interval
+y_scalers = {}  # Dictionary to store y_scalers by interval
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-training_in_progress = False
+training_in_progress = {}  # Track training status per interval
 
 
-def load_model_and_scaler():
-    """Load the trained model and scaler"""
-    global model, scaler, y_scaler
+def get_model_path(interval):
+    """Get model file paths for a specific interval"""
+    return {
+        'model': f'model/models/{interval}/trained_model.pt',
+        'scaler': f'model/models/{interval}/scaler.pkl',
+        'y_scaler': f'model/models/{interval}/y_scaler.pkl',
+        'metadata': f'model/models/{interval}/training_metadata.pkl'
+    }
+
+
+def load_model_and_scaler(interval='5m'):
+    """Load the trained model and scaler for specific interval"""
+    global models, scalers, y_scalers
 
     try:
+        paths = get_model_path(interval)
+
         # Load scaler
-        if os.path.exists('model/scaler.pkl'):
-            scaler = joblib.load('model/scaler.pkl')
-            print("Scaler loaded successfully")
+        if os.path.exists(paths['scaler']):
+            scalers[interval] = joblib.load(paths['scaler'])
+            print(f"Scaler loaded successfully for {interval}")
         else:
-            print("Scaler not found, creating new one")
-            scaler = MinMaxScaler()
+            print(f"Scaler not found for {interval}, creating new one")
+            scalers[interval] = MinMaxScaler()
 
         # Load y_scaler
-        if os.path.exists('model/y_scaler.pkl'):
-            y_scaler = joblib.load('model/y_scaler.pkl')
-            print("Y-scaler loaded successfully")
+        if os.path.exists(paths['y_scaler']):
+            y_scalers[interval] = joblib.load(paths['y_scaler'])
+            print(f"Y-scaler loaded successfully for {interval}")
         else:
-            print("Y-scaler not found")
-            y_scaler = None
+            print(f"Y-scaler not found for {interval}")
+            y_scalers[interval] = None
 
         # Load model
-        if os.path.exists('model/trained_model.pt'):
+        if os.path.exists(paths['model']):
             # Best hyperparameters
             model_params = {
                 'cnn_filters': 48,
@@ -196,16 +212,17 @@ def load_model_and_scaler():
                 'dropout_dense2': 0.3
             }
 
-            model = CNNLSTMModel(**model_params)
-            model.load_state_dict(torch.load('model/trained_model.pt', map_location=device))
-            model.to(device)
-            model.eval()
-            print("Model loaded successfully")
+            models[interval] = CNNLSTMModel(**model_params)
+            models[interval].load_state_dict(torch.load(paths['model'], map_location=device))
+            models[interval].to(device)
+            models[interval].eval()
+            print(f"Model loaded successfully for {interval}")
         else:
-            print("Trained model not found")
+            print(f"Trained model not found for {interval}")
+            models[interval] = None
 
     except Exception as e:
-        print(f"Error loading model/scaler: {e}")
+        print(f"Error loading model/scaler for {interval}: {e}")
 
 
 def prepare_data_for_prediction(data, sequence_length=60):
@@ -227,46 +244,50 @@ def prepare_data_for_prediction(data, sequence_length=60):
             return None
 
         # Scale the data
-        if scaler is not None:
-            scaled_data = scaler.transform(feature_data)
+        return feature_data, features
+
+    except Exception as e:
+        print(f"Error preparing data: {e}")
+        return None, None
+
+
+def make_prediction(data, interval='5m'):
+    """Make price prediction using the trained model for a specific interval"""
+    try:
+        if interval not in models or models[interval] is None:
+            print(f"No model loaded for interval {interval}")
+            return None
+
+        # Prepare data
+        feature_data, features = prepare_data_for_prediction(data)
+        if feature_data is None:
+            return None
+
+        # Scale the data using interval-specific scaler
+        if interval in scalers and scalers[interval] is not None:
+            scaled_data = scalers[interval].transform(feature_data)
         else:
             # If scaler not available, use the last sequence as is (normalized)
             scaled_data = (feature_data - feature_data.mean()) / feature_data.std()
             scaled_data = scaled_data.fillna(0).values
 
         # Get the last sequence for prediction
-        sequence = scaled_data[-sequence_length:]
-        return np.expand_dims(sequence, axis=0)  # Add batch dimension
-
-    except Exception as e:
-        print(f"Error preparing data: {e}")
-        return None
-
-
-def make_prediction(data):
-    """Make price prediction using the trained model"""
-    try:
-        if model is None:
-            return None
-
-        # Prepare data
-        input_data = prepare_data_for_prediction(data)
-        if input_data is None:
-            return None
+        sequence = scaled_data[-60:]  # sequence_length = 60
+        input_data = np.expand_dims(sequence, axis=0)  # Add batch dimension
 
         # Convert to tensor
         input_tensor = torch.FloatTensor(input_data).to(device)
 
         # Make prediction
         with torch.no_grad():
-            prediction = model(input_tensor)
+            prediction = models[interval](input_tensor)
             predicted_price = prediction.cpu().numpy()[0][0]
 
         # If y_scaler is available, inverse transform the prediction
-        if y_scaler is not None:
+        if interval in y_scalers and y_scalers[interval] is not None:
             try:
                 predicted_price_reshaped = np.array([[predicted_price]])
-                inverse_scaled = y_scaler.inverse_transform(predicted_price_reshaped)
+                inverse_scaled = y_scalers[interval].inverse_transform(predicted_price_reshaped)
                 predicted_price = inverse_scaled[0][0]
             except Exception as e:
                 print(f"Error inverse transforming prediction: {e}")
@@ -276,7 +297,7 @@ def make_prediction(data):
         return float(predicted_price)
 
     except Exception as e:
-        print(f"Error making prediction: {e}")
+        print(f"Error making prediction for {interval}: {e}")
         return None
 
 
@@ -321,29 +342,70 @@ def run_training_in_background(symbol='BTCUSDT', interval='5m'):
     def training_task():
         global training_in_progress
         try:
-            training_in_progress = True
-            print(f"Starting background training for {symbol} at {interval} interval...")
+            training_in_progress[interval] = True
+            print(f"🔥 BACKGROUND TRAINING STARTED: {symbol} at {interval} interval")
+            print(f"📊 Training parameters: symbol={symbol}, interval={interval}")
 
-            # Import and run training (inline to avoid import issues)
+            # Add the models directory to a Python path so we can import train_model
+            models_dir = os.path.join(os.path.dirname(__file__), 'models')
+            if models_dir not in sys.path:
+                sys.path.append(models_dir)
+
+            # Import and run training
             from model.train_model import train_model
+
+            # Create interval-specific directory
+            interval_dir = f'model/models/{interval}'
+            os.makedirs(interval_dir, exist_ok=True)
+            print(f"📁 Created directory: {interval_dir}")
+
+            # Train the model with explicit parameters
+            print(f"🚀 Calling train_model with: symbol={symbol}, interval={interval}")
             result = train_model(symbol=symbol, interval=interval, epochs=50, batch_size=32)
 
             if result.get('status') == 'success':
-                print("Training completed successfully!")
-                # Reload the model after training
-                load_model_and_scaler()
+                print(f"✅ Training completed successfully for {symbol} - {interval}!")
+
+                # Move model files to interval-specific directory
+                try:
+                    file_moves = [
+                        ('model/trained_model.pt', f'{interval_dir}/trained_model.pt'),
+                        ('model/scaler.pkl', f'{interval_dir}/scaler.pkl'),
+                        ('model/y_scaler.pkl', f'{interval_dir}/y_scaler.pkl'),
+                        ('model/training_metadata.pkl', f'{interval_dir}/training_metadata.pkl')
+                    ]
+
+                    for src, dst in file_moves:
+                        if os.path.exists(src):
+                            os.replace(src, dst)
+                            print(f"📦 Moved: {src} → {dst}")
+                        else:
+                            print(f"⚠️ File not found: {src}")
+
+                    print(f"🎉 Model files successfully moved to {interval_dir}")
+
+                    # Reload the model for this interval
+                    load_model_and_scaler(interval)
+                    print(f"🔄 Reloaded model for {interval}")
+
+                except Exception as move_error:
+                    print(f"❌ Error moving model files: {move_error}")
             else:
-                print(f"Training failed: {result}")
+                print(f"❌ Training failed for {interval}: {result}")
 
         except Exception as e:
-            print(f"Background training error: {e}")
+            print(f"💥 Background training error for {interval}: {e}")
+            import traceback
+            traceback.print_exc()
         finally:
-            training_in_progress = False
+            training_in_progress[interval] = False
+            print(f"🏁 Training process finished for {interval}")
 
     # Start training in background thread
     training_thread = threading.Thread(target=training_task)
     training_thread.daemon = True
     training_thread.start()
+    print(f"🧵 Background thread started for {symbol} - {interval}")
 
 
 @app.route('/')
@@ -376,7 +438,7 @@ def candles():
 
 @app.route('/predict')
 def predict():
-    """Generate AI predictions for the selected symbol"""
+    """Generate AI predictions for the selected symbol and interval"""
     symbol = request.args.get("symbol", "BTCUSDT")
     interval = request.args.get("interval", "5m")
     binance_interval = INTERVALS.get(interval, "5m")
@@ -395,8 +457,8 @@ def predict():
 
         current_price = data[-1]['close']
 
-        # Make AI prediction
-        predicted_price = make_prediction(data)
+        # Make AI prediction using interval-specific model
+        predicted_price = make_prediction(data, interval)
 
         # Calculate technical indicators
         indicators = calculate_technical_indicators(data)
@@ -406,7 +468,7 @@ def predict():
             price_change = predicted_price - current_price
             price_change_percent = (price_change / current_price) * 100
             direction = "UP" if price_change > 0 else "DOWN"
-            confidence = min(95, abs(price_change_percent) * 10)  # Simple confidence calculation
+            confidence = min(95, abs(int(price_change_percent * 10)))  # Simple confidence calculation
         else:
             predicted_price = current_price
             price_change = 0
@@ -416,6 +478,7 @@ def predict():
 
         return jsonify({
             'symbol': symbol,
+            'interval': interval,
             'current_price': current_price,
             'predicted_price': predicted_price,
             'price_change': price_change,
@@ -423,8 +486,8 @@ def predict():
             'direction': direction,
             'confidence': confidence,
             'indicators': indicators,
-            'model_loaded': model is not None,
-            'training_in_progress': training_in_progress,
+            'model_loaded': interval in models and models[interval] is not None,
+            'training_in_progress': training_in_progress.get(interval, False),
             'timestamp': datetime.now().isoformat()
         })
 
@@ -434,21 +497,26 @@ def predict():
 
 @app.route('/train')
 def train_model_endpoint():
-    """Endpoint to trigger model training"""
+    """Endpoint to trigger model training for specific interval"""
     global training_in_progress
 
-    if training_in_progress:
+    # Get parameters from request
+    symbol = request.args.get("symbol", "BTCUSDT")
+    interval = request.args.get("interval", "5m")
+
+    print(f"🎯 Training request received: symbol={symbol}, interval={interval}")
+
+    if training_in_progress.get(interval, False):
         return jsonify({
             'status': 'info',
-            'message': 'Training already in progress',
-            'training_in_progress': True
+            'message': f'Training already in progress for {interval}',
+            'training_in_progress': True,
+            'interval': interval
         })
 
     try:
-        symbol = request.args.get("symbol", "BTCUSDT")
-        interval = request.args.get("interval", "5m")
-
         # Start training in background
+        print(f"🚀 Starting training for {symbol} at {interval} interval...")
         run_training_in_background(symbol=symbol, interval=interval)
 
         return jsonify({
@@ -460,30 +528,39 @@ def train_model_endpoint():
         })
 
     except Exception as e:
-        training_in_progress = False
+        training_in_progress[interval] = False
         return jsonify({
             'status': 'error',
             'message': f'Failed to start training: {str(e)}',
-            'training_in_progress': False
+            'training_in_progress': False,
+            'interval': interval
         })
 
 
 @app.route('/training_status')
 def training_status():
-    """Check training status"""
+    """Check training status for a specific interval"""
+    interval = request.args.get("interval", "5m")
+
     return jsonify({
-        'training_in_progress': training_in_progress,
-        'model_loaded': model is not None,
-        'scaler_loaded': scaler is not None
+        'interval': interval,
+        'training_in_progress': training_in_progress.get(interval, False),
+        'model_loaded': interval in models and models[interval] is not None,
+        'scaler_loaded': interval in scalers and scalers[interval] is not None
     })
 
 
-# Initialize model and scaler on startup
-load_model_and_scaler()
+# Initialize models and scalers on startup for common intervals
+common_intervals = ['1m', '5m', '15m', '1h', '4h', '1d']
+for interval in common_intervals:
+    if os.path.exists(f'model/models/{interval}'):
+        load_model_and_scaler(interval)
 
 if __name__ == '__main__':
-    # Ensure model directory exists
+    # Ensure model directories exist
     os.makedirs('model', exist_ok=True)
+    for interval in common_intervals:
+        os.makedirs(f'model/models/{interval}', exist_ok=True)
 
     # Run with specific configuration to avoid auto-reload issues
-    app.run(debug=False, host='127.0.0.1', port=5000, use_reloader=False)
+    app.run(debug=True, host='0.0.0.0', port=5000, use_reloader=False)

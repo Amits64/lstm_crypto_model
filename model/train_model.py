@@ -1,3 +1,4 @@
+# models/train_model.py
 import numpy as np
 import pandas as pd
 import torch
@@ -19,6 +20,9 @@ warnings.filterwarnings('ignore')
 # Helper functions for atomic saves
 def safe_save(obj, path):
     """Save an object to a path atomically"""
+    # Create directory if it doesn't exist
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+
     tmp_path = path + '.tmp'
     try:
         joblib.dump(obj, tmp_path)
@@ -29,8 +33,12 @@ def safe_save(obj, path):
         if os.path.exists(tmp_path):
             os.remove(tmp_path)
 
+
 def safe_save_torch(state_dict, path):
     """Save a torch model state_dict atomically"""
+    # Create directory if it doesn't exist
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+
     tmp_path = path + '.tmp'
     try:
         torch.save(state_dict, tmp_path)
@@ -102,31 +110,25 @@ class CNNLSTMModel(nn.Module):
 
 def get_interval_string(interval):
     """Convert interval to the correct format for Binance API"""
-    interval_map = {
-        '1m': Client.KLINE_INTERVAL_1MINUTE,
-        '3m': Client.KLINE_INTERVAL_3MINUTE,
-        '5m': Client.KLINE_INTERVAL_5MINUTE,
-        '15m': Client.KLINE_INTERVAL_15MINUTE,
-        '30m': Client.KLINE_INTERVAL_30MINUTE,
-        '1h': Client.KLINE_INTERVAL_1HOUR,
-        '2h': Client.KLINE_INTERVAL_2HOUR,
-        '4h': Client.KLINE_INTERVAL_4HOUR,
-        '6h': Client.KLINE_INTERVAL_6HOUR,
-        '8h': Client.KLINE_INTERVAL_8HOUR,
-        '12h': Client.KLINE_INTERVAL_12HOUR,
-        '1d': Client.KLINE_INTERVAL_1DAY,
-        '3d': Client.KLINE_INTERVAL_3DAY,
-        '1w': Client.KLINE_INTERVAL_1WEEK,
-        '1M': Client.KLINE_INTERVAL_1MONTH
-    }
-
-    # Fallback method if the above doesn't work
-    if interval not in interval_map:
-        # For newer versions of python-binance, use string directly
-        return interval
-
     try:
-        return interval_map[interval]
+        interval_map = {
+            '1m': Client.KLINE_INTERVAL_1MINUTE,
+            '3m': Client.KLINE_INTERVAL_3MINUTE,
+            '5m': Client.KLINE_INTERVAL_5MINUTE,
+            '15m': Client.KLINE_INTERVAL_15MINUTE,
+            '30m': Client.KLINE_INTERVAL_30MINUTE,
+            '1h': Client.KLINE_INTERVAL_1HOUR,
+            '2h': Client.KLINE_INTERVAL_2HOUR,
+            '4h': Client.KLINE_INTERVAL_4HOUR,
+            '6h': Client.KLINE_INTERVAL_6HOUR,
+            '8h': Client.KLINE_INTERVAL_8HOUR,
+            '12h': Client.KLINE_INTERVAL_12HOUR,
+            '1d': Client.KLINE_INTERVAL_1DAY,
+            '3d': Client.KLINE_INTERVAL_3DAY,
+            '1w': Client.KLINE_INTERVAL_1WEEK,
+            '1M': Client.KLINE_INTERVAL_1MONTH
+        }
+        return interval_map.get(interval, interval)
     except (KeyError, AttributeError):
         # If constants don't exist, return the string directly
         return interval
@@ -137,8 +139,11 @@ def fetch_training_data(symbol='BTCUSDT', interval='1h', limit=2000):
     client = Client()
 
     try:
+        print(f"Fetching data for {symbol} with interval {interval}")
+
         # Get the correct interval format
         interval_param = get_interval_string(interval)
+        print(f"Using interval parameter: {interval_param}")
 
         # Get historical klines
         klines = client.get_klines(
@@ -168,7 +173,7 @@ def fetch_training_data(symbol='BTCUSDT', interval='1h', limit=2000):
         # Remove any rows with NaN values from conversion
         df = df.dropna(subset=numeric_columns)
 
-        print(f"Successfully fetched {len(df)} data points")
+        print(f"Successfully fetched {len(df)} data points for {interval}")
         return df[['timestamp'] + numeric_columns].reset_index(drop=True)
 
     except Exception as e:
@@ -200,7 +205,7 @@ def fetch_training_data(symbol='BTCUSDT', interval='1h', limit=2000):
             df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
             df = df.dropna(subset=numeric_columns)
 
-            print(f"Successfully fetched {len(df)} data points using alternative method")
+            print(f"Successfully fetched {len(df)} data points using alternative method for {interval}")
             return df[['timestamp'] + numeric_columns].reset_index(drop=True)
 
         except Exception as e2:
@@ -265,7 +270,7 @@ def prepare_sequences(data, sequence_length=60, prediction_horizon=1):
 
 
 def train_model(symbol='BTCUSDT', epochs=100, batch_size=32, interval='1h'):
-    """Train the CNN-LSTM model with best hyperparameters"""
+    """Train the CNN-LSTM model with best hyperparameters for specific interval"""
 
     # Best hyperparameters from your optimization
     best_params = {
@@ -280,9 +285,13 @@ def train_model(symbol='BTCUSDT', epochs=100, batch_size=32, interval='1h'):
         'lr': 0.005594661103196282
     }
 
-    print("Starting model training...")
+    print("=" * 60)
+    print("STARTING MODEL TRAINING")
+    print("=" * 60)
     print(f"Training for symbol: {symbol}")
     print(f"Interval: {interval}")
+    print(f"Epochs: {epochs}")
+    print(f"Batch size: {batch_size}")
     print(f"Best hyperparameters: {best_params}")
 
     # Device configuration
@@ -290,11 +299,13 @@ def train_model(symbol='BTCUSDT', epochs=100, batch_size=32, interval='1h'):
     print(f"Using device: {device}")
 
     # Fetch training data
-    print("Fetching training data...")
+    print("\nFetching training data...")
     df = fetch_training_data(symbol=symbol, interval=interval, limit=2000)
 
     if df is None:
-        return {"error": "Failed to fetch training data"}
+        error_msg = f"Failed to fetch training data for {symbol} at {interval} interval"
+        print(error_msg)
+        return {"status": "error", "error": error_msg}
 
     print(f"Fetched {len(df)} data points")
 
@@ -307,7 +318,9 @@ def train_model(symbol='BTCUSDT', epochs=100, batch_size=32, interval='1h'):
     print(f"Data points after cleaning: {len(df)}")
 
     if len(df) < 100:
-        return {"error": "Insufficient data for training"}
+        error_msg = f"Insufficient data for training: only {len(df)} points available"
+        print(error_msg)
+        return {"status": "error", "error": error_msg}
 
     # Prepare sequences
     print("Preparing sequences...")
@@ -315,7 +328,9 @@ def train_model(symbol='BTCUSDT', epochs=100, batch_size=32, interval='1h'):
     print(f"Created {len(X)} sequences")
 
     if len(X) == 0:
-        return {"error": "No sequences created - insufficient data"}
+        error_msg = "No sequences created - insufficient data"
+        print(error_msg)
+        return {"status": "error", "error": error_msg}
 
     # Scale the data
     print("Scaling data...")
@@ -331,11 +346,11 @@ def train_model(symbol='BTCUSDT', epochs=100, batch_size=32, interval='1h'):
     y_scaler = MinMaxScaler()
     y_scaled = y_scaler.fit_transform(y.reshape(-1, 1)).flatten()
 
-    # Save the scalers atomically
-    os.makedirs('model', exist_ok=True)
+    # Save the scalers to temporary model directory first
+    print("Saving scalers...")
     safe_save(scaler, 'model/scaler.pkl')
     safe_save(y_scaler, 'model/y_scaler.pkl')
-    print("Scalers saved atomically")
+    print("Scalers saved to temporary location")
 
     # Split data
     X_train, X_test, y_train, y_test = train_test_split(
@@ -375,7 +390,8 @@ def train_model(symbol='BTCUSDT', epochs=100, batch_size=32, interval='1h'):
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=10, factor=0.5)
 
     # Training loop
-    print("Starting training...")
+    print("\nStarting training loop...")
+    print("-" * 60)
     train_losses = []
     val_losses = []
     best_loss = float('inf')
@@ -418,7 +434,7 @@ def train_model(symbol='BTCUSDT', epochs=100, batch_size=32, interval='1h'):
         if val_loss < best_loss:
             best_loss = val_loss
             patience_counter = 0
-            # Save best model atomically
+            # Save best model to temporary location
             safe_save_torch(model.state_dict(), 'model/trained_model.pt')
         else:
             patience_counter += 1
@@ -426,13 +442,14 @@ def train_model(symbol='BTCUSDT', epochs=100, batch_size=32, interval='1h'):
         if epoch % 10 == 0:
             current_lr = optimizer.param_groups[0]['lr']
             print(
-                f'Epoch [{epoch + 1}/{epochs}], Train Loss: {avg_loss:.6f}, Val Loss: {val_loss:.6f}, LR: {current_lr:.8f}')
+                f'Epoch [{epoch + 1:3d}/{epochs}] | Train: {avg_loss:.6f} | Val: {val_loss:.6f} | LR: {current_lr:.8f}')
 
         if patience_counter >= max_patience:
             print(f"Early stopping at epoch {epoch + 1}")
             break
 
     # Final evaluation
+    print("\nFinal evaluation...")
     model.eval()
     with torch.no_grad():
         X_test_device = X_test_tensor.to(device)
@@ -453,7 +470,10 @@ def train_model(symbol='BTCUSDT', epochs=100, batch_size=32, interval='1h'):
         ss_tot = np.sum((y_test - np.mean(y_test)) ** 2)
         r2 = 1 - (ss_res / (ss_tot + 1e-8))
 
-        print(f"\nTraining completed!")
+        print("-" * 60)
+        print("TRAINING COMPLETED!")
+        print("-" * 60)
+        print(f"Symbol: {symbol} | Interval: {interval}")
         print(f"Final Test MSE: {mse:.6f}")
         print(f"Final Test RMSE: {rmse:.6f}")
         print(f"Final Test MAE: {mae:.6f}")
@@ -474,10 +494,14 @@ def train_model(symbol='BTCUSDT', epochs=100, batch_size=32, interval='1h'):
             "mae": float(mae),
             "mape": float(mape),
             "r2": float(r2)
-        }
+        },
+        "training_completed": datetime.now().isoformat()
     }
 
     safe_save(training_metadata, 'model/training_metadata.pkl')
+
+    print(f"Model and metadata saved to temporary 'model/' directory")
+    print("Files will be moved to interval-specific directory by the main app")
 
     return {
         "status": "success",
@@ -493,6 +517,7 @@ def train_model(symbol='BTCUSDT', epochs=100, batch_size=32, interval='1h'):
         "test_r2": r2,
         "model_saved": "model/trained_model.pt",
         "scaler_saved": "model/scaler.pkl",
+        "y_scaler_saved": "model/y_scaler.pkl",
         "metadata_saved": "model/training_metadata.pkl"
     }
 
