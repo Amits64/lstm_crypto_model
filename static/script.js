@@ -415,12 +415,24 @@ class CandlestickChartAutomation {
   }
 
   async fetchLatestNews() {
-    // In real implementation, fetch from news APIs
-    return [
-      { title: 'Bitcoin reaches new all-time high', sentiment: 0.8, source: 'CoinDesk', timestamp: Date.now() },
-      { title: 'Ethereum upgrade successful', sentiment: 0.7, source: 'CoinTelegraph', timestamp: Date.now() - 3600000 },
-      { title: 'Regulatory uncertainty impacts market', sentiment: -0.5, source: 'Reuters', timestamp: Date.now() - 7200000 }
-    ];
+    try {
+      const response = await fetch(`/api/news?_=${Date.now()}`);
+      const data = await response.json();
+
+      if (data.status === 'success' && data.news.length > 0) {
+        return data.news.map(item => ({
+          title: item.title,
+          sentiment: item.sentiment,
+          source: item.source,
+          timestamp: item.timestamp
+        }));
+      } else {
+        return []; // No news
+      }
+    } catch (error) {
+      console.error('❌ Failed to fetch live news:', error);
+      return []; // Fallback to empty
+    }
   }
 
   async analyzeSentiment(news) {
@@ -1778,6 +1790,373 @@ if (typeof module !== 'undefined' && module.exports) {
       // Additional helper functions would continue here...
     `;
   }
+
+  function fetchMarketNews() {
+    fetch('/api/news?limit=15')
+      .then(response => response.json())
+      .then(data => {
+        if (data.status === 'success') {
+          appState.newsItems = data.news;
+          renderNewsItems();
+          updateMarketSentiment(data.sentiment_summary);
+        } else {
+          console.error('Failed to fetch news:', data.error);
+          // Fallback to mock data if API fails
+          loadSampleNews();
+        }
+      })
+      .catch(error => {
+        console.error('Error fetching news:', error);
+        // Fallback to mock data on network error
+        loadSampleNews();
+      });
+  }
+
+  function updateMarketSentiment(sentimentSummary) {
+    // Update sentiment indicator in the UI
+    const sentimentElement = document.getElementById('market-sentiment');
+    if (sentimentElement) {
+      const sentiment = sentimentSummary.sentiment_label || 'neutral';
+      const score = sentimentSummary.overall_sentiment || 0;
+
+      sentimentElement.className = `sentiment-indicator sentiment-${sentiment}`;
+      sentimentElement.textContent = `Market: ${sentiment.toUpperCase()} (${score.toFixed(2)})`;
+    }
+  }
+
+  function fetchAndRenderAlerts() {
+    fetch(`/api/alerts?symbol=${appState.currentSymbol}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === 'success' && data.alerts.length > 0) {
+          appState.alerts = data.alerts.map(alert => ({
+            symbol: alert.symbol,
+            type: alert.type,
+            message: alert.message,
+            level: alert.level,
+            timestamp: alert.timestamp,
+            currentPrice: alert.current_price
+          }));
+          renderAlerts();
+        } else {
+          appState.alerts = [];
+          renderAlerts(); // Clear UI if no alerts
+        }
+      })
+      .catch(err => {
+        console.error("Error fetching alerts:", err);
+      });
+  }
+
+  function updateAlertsStatistics(stats) {
+    // Update alerts statistics in the UI
+    const statsElement = document.getElementById('alerts-stats');
+    if (statsElement) {
+      statsElement.innerHTML = `
+        <div class="stat-item">
+          <span>Total Alerts:</span>
+          <span>${stats.total_alerts || 0}</span>
+        </div>
+        <div class="stat-item">
+          <span>Last Hour:</span>
+          <span>${stats.alerts_last_hour || 0}</span>
+        </div>
+        <div class="stat-item">
+          <span>Monitoring:</span>
+          <span class="${stats.active_monitoring ? 'status-active' : 'status-inactive'}">
+            ${stats.active_monitoring ? 'Active' : 'Inactive'}
+          </span>
+        </div>
+      `;
+    }
+  }
+
+  function renderNewsItems() {
+    const container = document.getElementById('newsContainer');
+    container.innerHTML = '';
+
+    if (!appState.newsItems || appState.newsItems.length === 0) {
+      container.innerHTML = '<div class="no-data">No news available</div>';
+      return;
+    }
+
+    appState.newsItems.forEach(item => {
+      const sentimentClass = item.sentiment_class || 'news-neutral';
+      const sentimentIcon = item.sentiment_class || 'sentiment-neutral';
+
+      const newsElement = document.createElement('div');
+      newsElement.className = `news-item ${sentimentClass}`;
+
+      // Truncate description if too long
+      const description = item.description && item.description.length > 100
+        ? item.description.substring(0, 100) + '...'
+        : item.description || '';
+
+      newsElement.innerHTML = `
+        <div class="news-title">
+          <span class="news-sentiment ${sentimentIcon}"></span>
+          <a href="${item.url || '#'}" target="_blank" rel="noopener">
+            ${item.title}
+          </a>
+        </div>
+        ${description ? `<div class="news-description">${description}</div>` : ''}
+        <div class="news-source">
+          <span>${item.source}</span>
+          <span class="news-time">${new Date(item.timestamp).toLocaleTimeString()}</span>
+          <span class="news-relevance">Relevance: ${((item.relevance || 0) * 100).toFixed(0)}%</span>
+        </div>
+      `;
+
+      container.appendChild(newsElement);
+    });
+  }
+
+  function renderAlerts() {
+    const container = document.getElementById('alertsContainer');
+    container.innerHTML = '';
+
+    if (!appState.alerts || appState.alerts.length === 0) {
+      container.innerHTML = '<div class="no-data">No alerts available</div>';
+      return;
+    }
+
+    appState.alerts.forEach(alert => {
+      const alertClass = alert.level_class || 'alert-neutral';
+
+      const alertElement = document.createElement('div');
+      alertElement.className = `alert ${alertClass}`;
+
+      // Format additional data if available
+      let additionalInfo = '';
+      if (alert.additional_data) {
+        const data = alert.additional_data;
+        if (data.change_percent) {
+          additionalInfo += `<div class="alert-detail">Change: ${data.change_percent.toFixed(2)}%</div>`;
+        }
+        if (data.volume_ratio) {
+          additionalInfo += `<div class="alert-detail">Volume: ${data.volume_ratio.toFixed(1)}x</div>`;
+        }
+        if (data.rsi) {
+          additionalInfo += `<div class="alert-detail">RSI: ${data.rsi.toFixed(1)}</div>`;
+        }
+      }
+
+      alertElement.innerHTML = `
+        <div class="alert-header">
+          <strong>${alert.symbol} - ${alert.type.replace('_', ' ')}</strong>
+          <span class="alert-time">${new Date(alert.timestamp).toLocaleTimeString()}</span>
+        </div>
+        <div class="alert-message">${alert.message}</div>
+        <div class="alert-price">Price: $${alert.current_price?.toFixed(4) || 'N/A'}</div>
+        ${additionalInfo}
+        <div class="alert-severity severity-${alert.severity}">${alert.severity.toUpperCase()}</div>
+      `;
+
+      container.appendChild(alertElement);
+    });
+  }
+
+  // Create custom alert function
+  function createCustomAlert() {
+    const symbol = appState.currentSymbol;
+    const alertType = prompt('Enter alert type (price_surge, volume_spike, etc.):');
+    const threshold = prompt('Enter threshold value:');
+    const condition = prompt('Enter condition (above/below):') || 'above';
+
+    if (!alertType || !threshold) {
+      showAlert('Please provide valid alert parameters', 'danger');
+      return;
+    }
+
+    fetch('/api/alerts/create', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        symbol: symbol,
+        alert_type: alertType,
+        threshold: parseFloat(threshold),
+        condition: condition
+      })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.status === 'success') {
+        showAlert(`Custom alert created for ${symbol}`, 'success');
+      } else {
+        showAlert(`Failed to create alert: ${data.error}`, 'danger');
+      }
+    })
+    .catch(error => {
+      console.error('Error creating alert:', error);
+      showAlert('Error creating custom alert', 'danger');
+    });
+  }
+
+  // Control alerts monitoring
+  function toggleAlertsMonitoring() {
+    const action = appState.alertsMonitoring ? 'stop' : 'start';
+
+    fetch('/api/alerts/control', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ action: action })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.status === 'success') {
+        appState.alertsMonitoring = !appState.alertsMonitoring;
+        const button = document.getElementById('toggleAlertsBtn');
+        if (button) {
+          button.textContent = `Alerts: ${appState.alertsMonitoring ? 'ON' : 'OFF'}`;
+          button.className = appState.alertsMonitoring ? 'btn success' : 'btn';
+        }
+        showAlert(data.message, 'success');
+      } else {
+        showAlert(`Failed to ${action} monitoring: ${data.error}`, 'danger');
+      }
+    })
+    .catch(error => {
+      console.error('Error controlling alerts:', error);
+      showAlert('Error controlling alerts monitoring', 'danger');
+    });
+  }
+
+  // Start news analysis
+  function startNewsAnalysis() {
+    setInterval(() => {
+      fetchMarketNews();
+    }, 300000); // Every 5 minutes
+    fetchMarketNews(); // Initial fetch
+  }
+
+
+  function startAlertsMonitoring() {
+    // Fetch alerts immediately
+    fetchMarketAlerts();
+
+    // Set up periodic updates (every 30 seconds)
+    setInterval(() => {
+      fetchMarketAlerts();
+    }, 30000);
+  }
+
+  // Add to your init() function
+  function init() {
+    setupEventListeners();
+    fetchAndPlot();
+    startPerformanceTracking();
+    startNewsAnalysis();      // Use real news data
+    startAlertsMonitoring();  // Use real alerts data
+    setupMultiChartView();
+    updateSystemStatus("System: Operational");
+    setInterval(fetchAndRenderAlerts, 60000);
+  }
+
+  // Add CSS styles for new elements (add to your <style> section)
+  const additionalCSS = `
+  .no-data {
+    text-align: center;
+    color: #666;
+    font-style: italic;
+    padding: 20px;
+  }
+
+  .news-description {
+    font-size: 12px;
+    color: #ccc;
+    margin: 5px 0;
+    line-height: 1.4;
+  }
+
+  .news-relevance {
+    font-size: 10px;
+    color: #999;
+    margin-left: 10px;
+  }
+
+  .alert-detail {
+    font-size: 11px;
+    color: #aaa;
+    margin: 2px 0;
+  }
+
+  .alert-severity {
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    margin-top: 5px;
+    text-align: center;
+  }
+
+  .severity-high {
+    background: rgba(255, 68, 68, 0.2);
+    color: #ff4444;
+  }
+
+  .severity-medium {
+    background: rgba(255, 170, 0, 0.2);
+    color: #ffaa00;
+  }
+
+  .severity-low {
+    background: rgba(136, 136, 136, 0.2);
+    color: #888;
+  }
+
+  .sentiment-indicator {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+  }
+
+  .sentiment-bullish {
+    background: rgba(0, 255, 136, 0.2);
+    color: #00ff88;
+  }
+
+  .sentiment-bearish {
+    background: rgba(255, 68, 68, 0.2);
+    color: #ff4444;
+  }
+
+  .sentiment-neutral {
+    background: rgba(255, 170, 0, 0.2);
+    color: #ffaa00;
+  }
+
+  #alerts-stats {
+    margin-bottom: 15px;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+  }
+
+  .stat-item {
+    display: flex;
+    justify-content: space-between;
+    margin: 5px 0;
+    font-size: 12px;
+  }
+
+  .status-active {
+    color: #00ff88;
+  }
+
+  .status-inactive {
+    color: #ff4444;
+  }
+  `;
+
+  // Add the CSS to your document
+  const styleSheet = document.createElement('style');
+  styleSheet.textContent = additionalCSS;
+  document.head.appendChild(styleSheet);
 
   // ====================
   // WEBSOCKET SETUP

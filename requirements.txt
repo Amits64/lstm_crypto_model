@@ -7,3 +7,10 @@ scikit-learn
 joblib
 plotly
 requests
+feedparser
+textblob
+binance
+ta
+scipy
+xgboost
+flask-caching

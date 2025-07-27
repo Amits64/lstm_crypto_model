@@ -21,12 +21,16 @@
 
     .header {
       background: rgba(17, 17, 17, 0.95);
-      backdrop-filter: blur(10px);
+      backdrop-filter: blur(5px);
       border-bottom: 1px solid #333;
       padding: 20px;
       position: sticky;
       top: 0;
       z-index: 1000;
+      background-image: url('https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1920&q=80');
+      background-size: cover;
+      background-position: center;
+      background-blend-mode: overlay;
     }
 
     .title {
@@ -199,6 +203,10 @@
       border-radius: 10px;
       border: 1px solid #444;
       padding: 15px;
+      flex: 1;
+      min-height: 200px;
+      display: flex;
+      flex-direction: column;
     }
 
     .panel-title {
@@ -209,6 +217,11 @@
       display: flex;
       align-items: center;
       gap: 10px;
+    }
+
+    .panel-content {
+      flex: 1;
+      overflow-y: auto;
     }
 
     .ai-icon {
@@ -381,18 +394,14 @@
       100% { transform: rotate(360deg); }
     }
 
-    /* New panels */
-    .alerts-panel {
-      max-height: 200px;
-      overflow-y: auto;
-    }
-
+    /* Alerts Panel */
     .alert {
       padding: 10px;
       margin: 8px 0;
       border-radius: 8px;
       font-size: 13px;
       border-left: 4px solid;
+      background: rgba(255, 255, 255, 0.05);
     }
 
     .alert-buy {
@@ -422,43 +431,77 @@
       font-size: 11px;
     }
 
-    .performance-panel .indicator-item {
-      padding: 6px 0;
-      font-size: 13px;
+    .alert-message {
+      font-size: 12px;
     }
 
-    .trading-signals-panel .indicator-item {
-      padding: 8px 0;
-      border-bottom: 1px solid #333;
+    /* Trading Signals Panel */
+    .signal-item {
+      padding: 10px;
+      margin: 8px 0;
+      border-radius: 8px;
+      font-size: 13px;
+      background: rgba(255, 255, 255, 0.05);
+      border-left: 4px solid;
     }
 
     .signal-buy {
-      color: #00ff88;
+      border-left-color: #00ff88;
     }
 
     .signal-sell {
-      color: #ff4444;
+      border-left-color: #ff4444;
     }
 
     .signal-neutral {
-      color: #ffaa00;
+      border-left-color: #ffaa00;
+    }
+
+    .signal-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 5px;
+    }
+
+    .signal-symbol {
+      font-weight: bold;
+    }
+
+    .signal-type {
+      font-weight: bold;
     }
 
     .signal-strength {
-      font-size: 12px;
+      font-size: 11px;
       padding: 2px 6px;
       border-radius: 4px;
       background: rgba(255, 255, 255, 0.1);
     }
 
-    .news-panel {
-      max-height: 200px;
-      overflow-y: auto;
+    .signal-desc {
+      font-size: 12px;
+      color: #ccc;
     }
 
+    /* News Panel */
     .news-item {
-      padding: 10px 0;
-      border-bottom: 1px solid #333;
+      padding: 10px;
+      margin: 8px 0;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.05);
+      border-left: 4px solid;
+    }
+
+    .news-bullish {
+      border-left-color: #00ff88;
+    }
+
+    .news-bearish {
+      border-left-color: #ff4444;
+    }
+
+    .news-neutral {
+      border-left-color: #ffaa00;
     }
 
     .news-title {
@@ -469,21 +512,34 @@
       gap: 8px;
     }
 
-    .sentiment-bullish {
-      color: #00ff88;
-    }
-
-    .sentiment-bearish {
-      color: #ff4444;
-    }
-
-    .sentiment-neutral {
-      color: #ffaa00;
-    }
-
     .news-source {
       font-size: 11px;
       color: #999;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .news-time {
+      font-size: 11px;
+    }
+
+    .news-sentiment {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .sentiment-bullish {
+      background-color: #00ff88;
+    }
+
+    .sentiment-bearish {
+      background-color: #ff4444;
+    }
+
+    .sentiment-neutral {
+      background-color: #ffaa00;
     }
 
     /* Multi-chart grid */
@@ -665,79 +721,82 @@
           <span class="ai-icon"></span>
           AI Price Prediction
         </div>
-
-        <div id="predictionCard" class="prediction-card" style="display: none;">
-          <div class="price-display">
-            <div>
-              <div style="font-size: 12px; color: #999;">Current</div>
-              <div id="currentPrice" class="current-price">--</div>
+        <div class="panel-content">
+          <div id="predictionCard" class="prediction-card" style="display: none;">
+            <div class="price-display">
+              <div>
+                <div style="font-size: 12px; color: #999;">Current</div>
+                <div id="currentPrice" class="current-price">--</div>
+              </div>
+              <div>
+                <div style="font-size: 12px; color: #999;">Predicted</div>
+                <div id="predictedPrice" class="predicted-price">--</div>
+              </div>
             </div>
-            <div>
-              <div style="font-size: 12px; color: #999;">Predicted</div>
-              <div id="predictedPrice" class="predicted-price">--</div>
+
+            <div class="prediction-details">
+              <div class="detail-item">
+                <span>Change:</span>
+                <span id="priceChange">--</span>
+              </div>
+              <div class="detail-item">
+                <span>Direction:</span>
+                <span id="direction">--</span>
+              </div>
+              <div class="detail-item">
+                <span>Change %:</span>
+                <span id="changePercent">--</span>
+              </div>
+              <div class="detail-item">
+                <span>Confidence:</span>
+                <span id="confidence">--</span>
+              </div>
+            </div>
+
+            <div class="confidence-bar">
+              <div id="confidenceFill" class="confidence-fill" style="width: 0%"></div>
+            </div>
+
+            <div style="font-size: 11px; color: #666; margin-top: 10px;">
+              Last updated: <span id="predictionTime">--</span>
             </div>
           </div>
 
-          <div class="prediction-details">
-            <div class="detail-item">
-              <span>Change:</span>
-              <span id="priceChange">--</span>
-            </div>
-            <div class="detail-item">
-              <span>Direction:</span>
-              <span id="direction">--</span>
-            </div>
-            <div class="detail-item">
-              <span>Change %:</span>
-              <span id="changePercent">--</span>
-            </div>
-            <div class="detail-item">
-              <span>Confidence:</span>
-              <span id="confidence">--</span>
-            </div>
+          <div id="predictionLoading" class="loading" style="display: none;">
+            <div class="spinner"></div>
+            <span>Generating AI prediction...</span>
           </div>
 
-          <div class="confidence-bar">
-            <div id="confidenceFill" class="confidence-fill" style="width: 0%"></div>
+          <div id="predictionError" class="error-message" style="display: none;">
+            Failed to get prediction. Please try again.
           </div>
-
-          <div style="font-size: 11px; color: #666; margin-top: 10px;">
-            Last updated: <span id="predictionTime">--</span>
-          </div>
-        </div>
-
-        <div id="predictionLoading" class="loading" style="display: none;">
-          <div class="spinner"></div>
-          <span>Generating AI prediction...</span>
-        </div>
-
-        <div id="predictionError" class="error-message" style="display: none;">
-          Failed to get prediction. Please try again.
         </div>
       </div>
 
       <div class="panel indicators-panel">
         <div class="panel-title">Technical Indicators</div>
-        <div id="technicalIndicators">
-          <div class="indicator-item">
-            <span>MA 20:</span>
-            <span id="ma20" class="indicator-value">--</span>
-          </div>
-          <div class="indicator-item">
-            <span>MA 50:</span>
-            <span id="ma50" class="indicator-value">--</span>
-          </div>
-          <div class="indicator-item">
-            <span>RSI:</span>
-            <span id="rsi" class="indicator-value">--</span>
-          </div>
-          <div class="indicator-item">
-            <span>MACD:</span>
-            <span id="macd" class="indicator-value">--</span>
-          </div>
-          <div class="indicator-item">
-            <span>MACD Signal:</span>
-            <span id="macdSignal" class="indicator-value">--</span>
+        <div class="panel-content">
+          <div id="technicalIndicators">
+            <div class="indicator-item">
+              <span>MA 20:</span>
+              <span id="ma20" class="indicator-value">--</span>
+            </div>
+            <div class="indicator-item">
+              <span>MA 50:</span>
+              <span id="ma50" class="indicator-value">--</span>
+            </div>
+            <div class="indicator-item">
+              <span>RSI:</span>
+              <span id="rsi" class="indicator-value">--</span>
+            </div>
+            <div class="indicator-item">
+              <span>MACD:</span>
+              <span id="macd" class="indicator-value">--</span>
+            </div>
+            <div class="indicator-item">
+              <span>MACD Signal:</span>
+              <span id="macdSignal" class="indicator-value">--</span>
+            </div>
           </div>
         </div>
       </div>
@@ -747,11 +806,12 @@
           <span>🔔</span>
           Active Alerts
         </div>
-        <div id="alertsContainer">
-          <!-- Alerts will be dynamically inserted here -->
-          <div class="loading">
-            <div class="spinner"></div>
-            <span>Loading alerts...</span>
+        <div class="panel-content">
+          <div id="alertsContainer">
+            <div class="loading">
+              <div class="spinner"></div>
+              <span>Loading alerts...</span>
+            </div>
           </div>
         </div>
       </div>
@@ -761,22 +821,24 @@
           <span>📊</span>
           Performance Metrics
         </div>
-        <div id="performanceMetrics">
-          <div class="indicator-item">
-            <span>Uptime:</span>
-            <span id="uptime" class="indicator-value">--</span>
-          </div>
-          <div class="indicator-item">
-            <span>Data Points:</span>
-            <span id="dataPoints" class="indicator-value">--</span>
-          </div>
-          <div class="indicator-item">
-            <span>Avg Latency:</span>
-            <span id="avgLatency" class="indicator-value">--</span>
-          </div>
-          <div class="indicator-item">
-            <span>Error Rate:</span>
-            <span id="errorRate" class="indicator-value">--</span>
+        <div class="panel-content">
+          <div id="performanceMetrics">
+            <div class="indicator-item">
+              <span>Uptime:</span>
+              <span id="uptime" class="indicator-value">--</span>
+            </div>
+            <div class="indicator-item">
+              <span>Data Points:</span>
+              <span id="dataPoints" class="indicator-value">--</span>
+            </div>
+            <div class="indicator-item">
+              <span>Avg Latency:</span>
+              <span id="avgLatency" class="indicator-value">--</span>
+            </div>
+            <div class="indicator-item">
+              <span>Error Rate:</span>
+              <span id="errorRate" class="indicator-value">--</span>
+            </div>
           </div>
         </div>
       </div>
@@ -786,11 +848,12 @@
           <span>📈</span>
           Trading Signals
         </div>
-        <div id="tradingSignals">
-          <!-- Signals will be dynamically inserted here -->
-          <div class="loading">
-            <div class="spinner"></div>
-            <span>Analyzing market...</span>
+        <div class="panel-content">
+          <div id="tradingSignals">
+            <div class="loading">
+              <div class="spinner"></div>
+              <span>Analyzing market...</span>
+            </div>
           </div>
         </div>
       </div>
@@ -800,11 +863,12 @@
           <span>📰</span>
           Market News & Sentiment
         </div>
-        <div id="newsContainer">
-          <!-- News items will be dynamically inserted here -->
-          <div class="loading">
-            <div class="spinner"></div>
-            <span>Loading news...</span>
+        <div class="panel-content">
+          <div id="newsContainer">
+            <div class="loading">
+              <div class="spinner"></div>
+              <span>Loading news...</span>
+            </div>
           </div>
         </div>
       </div>
@@ -873,6 +937,104 @@
       startNewsAnalysis();
       setupMultiChartView();
       updateSystemStatus("System: Operational");
+
+      // Load sample data for panels
+      fetchAndRenderAlerts();
+      fetchAndRenderNews();
+      loadSampleSignals();
+    }
+
+    // Load sample alerts data
+    function loadSampleAlerts() {
+      const now = Date.now();
+      appState.alerts = [
+        {
+          symbol: 'BTCUSDT',
+          type: 'PRICE_SURGE',
+          message: 'Price increased by 2.5% in the last hour',
+          level: 'buy',
+          timestamp: now - 60000,
+          currentPrice: 51234.56
+        },
+        {
+          symbol: 'ETHUSDT',
+          type: 'VOLUME_SPIKE',
+          message: 'Volume spike detected (250% of average)',
+          level: 'buy',
+          timestamp: now - 180000,
+          currentPrice: 2890.12
+        },
+        {
+          symbol: 'BNBUSDT',
+          type: 'SUPPORT_BREAK',
+          message: 'Price broke below key support level',
+          level: 'sell',
+          timestamp: now - 300000,
+          currentPrice: 412.34
+        }
+      ];
+      renderAlerts();
+    }
+
+    // Load sample trading signals
+    function loadSampleSignals() {
+      const now = Date.now();
+      appState.tradingSignals = [
+        {
+          symbol: 'BTCUSDT',
+          type: 'BUY',
+          strength: 85,
+          message: 'RSI oversold with price above MA20',
+          timestamp: now - 120000
+        },
+        {
+          symbol: 'ETHUSDT',
+          type: 'SELL',
+          strength: 78,
+          message: 'Bearish divergence on 4H chart',
+          timestamp: now - 240000
+        },
+        {
+          symbol: 'SOLUSDT',
+          type: 'BUY',
+          strength: 92,
+          message: 'Bullish engulfing pattern on daily',
+          timestamp: now - 360000
+        }
+      ];
+      renderTradingSignals();
+    }
+
+    // Load sample news items
+    function loadSampleNews() {
+      const now = Date.now();
+      appState.newsItems = [
+        {
+          title: 'Bitcoin ETF Approval Expected Soon',
+          sentiment: 0.85,
+          source: 'CryptoNews',
+          timestamp: now - 60000
+        },
+        {
+          title: 'Fed Interest Rate Decision Impacts Crypto Markets',
+          sentiment: -0.45,
+          source: 'Financial Times',
+          timestamp: now - 3600000
+        },
+        {
+          title: 'Ethereum 2.0 Upgrade Completes Successfully',
+          sentiment: 0.75,
+          source: 'CoinDesk',
+          timestamp: now - 7200000
+        },
+        {
+          title: 'Regulatory Concerns Grow for Stablecoins',
+          sentiment: -0.65,
+          source: 'Bloomberg',
+          timestamp: now - 10800000
+        }
+      ];
+      renderNewsItems();
     }
 
     // Set up all event listeners
@@ -1349,19 +1511,22 @@
       container.innerHTML = '';
 
       appState.newsItems.forEach(item => {
-        const sentimentClass = item.sentiment > 0.3 ? 'sentiment-bullish' :
-                              item.sentiment < -0.3 ? 'sentiment-bearish' : 'sentiment-neutral';
-        const sentimentIcon = item.sentiment > 0.3 ? '📈' :
-                             item.sentiment < -0.3 ? '📉' : '➖';
+        const sentimentClass = item.sentiment > 0.3 ? 'news-bullish' :
+                              item.sentiment < -0.3 ? 'news-bearish' : 'news-neutral';
+        const sentimentIcon = item.sentiment > 0.3 ? 'sentiment-bullish' :
+                             item.sentiment < -0.3 ? 'sentiment-bearish' : 'sentiment-neutral';
 
         const newsElement = document.createElement('div');
-        newsElement.className = 'news-item';
+        newsElement.className = `news-item ${sentimentClass}`;
         newsElement.innerHTML = `
           <div class="news-title">
-            <span class="${sentimentClass}">${sentimentIcon}</span>
+            <span class="news-sentiment ${sentimentIcon}"></span>
             ${item.title}
           </div>
-          <div class="news-source">${item.source} • ${new Date(item.timestamp).toLocaleTimeString()}</div>
+          <div class="news-source">
+            <span>${item.source}</span>
+            <span class="news-time">${new Date(item.timestamp).toLocaleTimeString()}</span>
+          </div>
         `;
         container.appendChild(newsElement);
       });
@@ -1415,13 +1580,14 @@
                           signal.type === 'SELL' ? 'signal-sell' : 'signal-neutral';
 
         const signalElement = document.createElement('div');
-        signalElement.className = 'indicator-item';
+        signalElement.className = `signal-item ${signalClass}`;
         signalElement.innerHTML = `
-          <div>
-            <span class="${signalClass}">${signal.symbol} ${signal.type}</span>
-            <div class="signal-desc">${signal.message}</div>
+          <div class="signal-header">
+            <span class="signal-symbol">${signal.symbol}</span>
+            <span class="signal-type">${signal.type}</span>
           </div>
-          <div class="signal-strength">${signal.strength}%</div>
+          <div class="signal-desc">${signal.message}</div>
+          <div class="signal-strength">Strength: ${signal.strength}%</div>
         `;
         container.appendChild(signalElement);
       });
@@ -1476,6 +1642,7 @@
             <span class="alert-time">${new Date(alert.timestamp).toLocaleTimeString()}</span>
           </div>
           <div class="alert-message">${alert.message}</div>
+          <div class="alert-price">Price: ${alert.currentPrice?.toFixed(2) || '--'}</div>
         `;
         container.appendChild(alertElement);
       });
