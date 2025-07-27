@@ -15,8 +15,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     g++ \
  && rm -rf /var/lib/apt/lists/*
 
-# Copy requirement files
-COPY requirements.txt .
+# Copy application codes
+COPY . .
 
 # Install Python packages into a temp location
 RUN pip install --upgrade pip \
@@ -37,9 +37,6 @@ COPY --from=builder /install /usr/local
 
 # Copy application code
 COPY . .
-
-# Ensure model directory exists
-RUN mkdir -p model
 
 # Expose app port
 EXPOSE 5000
